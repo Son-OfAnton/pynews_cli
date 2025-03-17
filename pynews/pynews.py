@@ -17,6 +17,7 @@ def main():
     
     # Handle comment viewing if requested
     if options.comments:
+        # The display_comments_for_story function now handles navigation internally
         display_comments_for_story(
             options.comments, 
             page_size=options.page_size, 

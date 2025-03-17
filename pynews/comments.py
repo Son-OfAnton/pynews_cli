@@ -1,8 +1,13 @@
+"""
+Functions for retrieving and displaying comments from HackerNews.
+"""
 import datetime
 import html
 import textwrap
 import requests
 import time
+import sys
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .constants import URLS
@@ -182,9 +187,61 @@ def count_comment_tree(comments):
     
     return count
 
+def clear_screen():
+    """Clear the terminal screen."""
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+def show_navigation_menu(current_page, total_pages):
+    """Display navigation options for pagination."""
+    print("\n" + "=" * 40)
+    print("Navigation:")
+    
+    if current_page > 1:
+        print("[p] Previous page")
+    else:
+        print("[ ] Previous page (unavailable)")
+        
+    if current_page < total_pages:
+        print("[n] Next page")
+    else:
+        print("[ ] Next page (unavailable)")
+    
+    print("[g] Go to page (enter number)")
+    print("[q] Quit")
+    print("=" * 40)
+    
+    choice = input("\nEnter choice: ").strip().lower()
+    return choice
+
+def handle_navigation(choice, current_page, total_pages):
+    """Process user navigation choice and return the new page number."""
+    if choice == 'p' and current_page > 1:
+        return current_page - 1
+    elif choice == 'n' and current_page < total_pages:
+        return current_page + 1
+    elif choice == 'g':
+        try:
+            page_num = int(input(f"Enter page number (1-{total_pages}): "))
+            if 1 <= page_num <= total_pages:
+                return page_num
+            else:
+                print(f"Invalid page number. Must be between 1 and {total_pages}.")
+                input("Press Enter to continue...")
+                return current_page
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+            input("Press Enter to continue...")
+            return current_page
+    elif choice == 'q':
+        return -1  # Signal to quit
+    else:
+        print("Invalid choice.")
+        input("Press Enter to continue...")
+        return current_page
+
 def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
     """
-    Display comments for a given story with pagination support.
+    Display comments for a given story with interactive pagination support.
     
     Args:
         story_id: The ID of the story to show comments for
@@ -201,35 +258,55 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
         print(f"Error: Could not fetch story with ID {story_id}")
         return (0, 0, 0)
     
-    # Display story information
-    print(f"\n=== Comments for: {story.get('title', 'Unknown Story')} ===")
-    print(f"By {story.get('by', 'Unknown')} · {format_timestamp(story.get('time', 0))}")
-    print(f"Points: {story.get('score', 0)} · URL: {story.get('url', '[No URL]')}\n")
+    # Cache for the comment tree to avoid refetching
+    comment_tree = None
+    total_comments = 0
+    total_pages = 0
+    current_page = page_num
     
-    # Check if the story has comments
-    comment_ids = story.get('kids', [])
-    if not comment_ids:
-        print("This story has no comments.")
-        return (0, 0, 0)
+    while True:
+        clear_screen()
+        
+        # Display story information
+        print(f"\n=== Comments for: {story.get('title', 'Unknown Story')} ===")
+        print(f"By {story.get('by', 'Unknown')} · {format_timestamp(story.get('time', 0))}")
+        print(f"Points: {story.get('score', 0)} · URL: {story.get('url', '[No URL]')}\n")
+        
+        # Check if the story has comments
+        comment_ids = story.get('kids', [])
+        if not comment_ids:
+            print("This story has no comments.")
+            input("\nPress Enter to quit...")
+            return (0, 0, 0)
+        
+        # Fetch comments if not already cached
+        if comment_tree is None:
+            print(f"Fetching comments...")
+            comment_tree = fetch_comment_tree(comment_ids)
+            total_comments = count_comment_tree(comment_tree)
+            total_pages = (total_comments + page_size - 1) // page_size
+            
+            # Validate page number
+            if current_page > total_pages:
+                current_page = total_pages
+            
+        # Calculate pagination information
+        start_idx = (current_page - 1) * page_size
+        
+        # Show pagination info
+        print(f"Page {current_page} of {total_pages} (Total comments: {total_comments})")
+        print("=" * width)
+        
+        # Display comments for the current page
+        print_comment_tree(comment_tree, page_size, start_idx=start_idx, width=width)
+        
+        # Display navigation menu
+        choice = show_navigation_menu(current_page, total_pages)
+        new_page = handle_navigation(choice, current_page, total_pages)
+        
+        if new_page == -1:  # User chose to quit
+            break
+            
+        current_page = new_page
     
-    print(f"Fetching comments...")
-    comment_tree = fetch_comment_tree(comment_ids)
-    
-    # Count total comments to calculate pagination
-    total_comments = count_comment_tree(comment_tree)
-    
-    # Calculate pagination information
-    start_idx = (page_num - 1) * page_size
-    total_pages = (total_comments + page_size - 1) // page_size
-    
-    # Show pagination info
-    print(f"\nPage {page_num} of {total_pages} (Total comments: {total_comments})")
-    print("=" * width)
-    
-    # Display comments for the current page
-    print_comment_tree(comment_tree, page_size, start_idx=start_idx, width=width)
-    
-    # Display navigation help
-    print("\nUse -c STORY_ID -p PAGE_SIZE --page PAGE_NUM to navigate between pages")
-    
-    return (total_pages, page_num, total_comments)
+    return (total_pages, current_page, total_comments)
