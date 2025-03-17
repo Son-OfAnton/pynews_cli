@@ -84,6 +84,28 @@
 			"issue_comment": "The issue can be found on page 4.",
 			"issue_source": "pynews/comments.py", 
 			"comment": "There is an issue regarding rendering special characters in the comments on model A."
+		},
+		{
+			"prompt": "When pressing two-digit numbers the quickly routes to the first digit page. For example, If I want to go to page 24 and press 2 and 4 consecutively, the app routes to page 2.",
+			"hfi_id": "72a02387-6680-490b-a5a2-0719c06f64ff",
+			"choice": -2,
+			"gdrive": "",
+			"usecase": "feature_implementation",	
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 4.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "There is an issue regarding rendering special characters in the comments on model A."
+		},
+		{
+			"prompt": "Now, add an option to sort the comments by time.",
+			"hfi_id": "72a02387-6680-490b-a5a2-0719c06f64ff",
+			"choice": -2,
+			"gdrive": "",
+			"usecase": "feature_implementation",	
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 4.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "There is an issue regarding rendering special characters in the comments on model A."
 		}
   ]
 }

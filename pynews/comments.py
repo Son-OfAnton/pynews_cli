@@ -10,6 +10,7 @@ import sys
 import os
 import select
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from enum import Enum
 
 from .constants import URLS
 from .loading import with_loading, LoadingIndicator
@@ -18,6 +19,12 @@ from .getch import getch
 
 # Check for color support
 USE_COLORS = supports_color()
+
+class CommentSortOrder(Enum):
+    """Enum for different comment sorting orders."""
+    NEWEST_FIRST = "newest"
+    OLDEST_FIRST = "oldest"
+    DEFAULT = "default"  # Maintains the original API order/structure
 
 def fetch_item(item_id):
     """Fetch a single item (story or comment) from the HackerNews API."""
@@ -86,10 +93,41 @@ def _fetch_comment_tree_no_loading(comment_ids, max_threads=10):
             # Otherwise, add it as a child to its parent
             parent = id_to_comment[parent_id]
             parent['children'].append(comment)
-            
-    # Sort comments by timestamp
-    comments.sort(key=lambda c: c.get('time', 0), reverse=True)
+    
+    # Comments come from the API sorted by date (newest first) at each level
+    # This maintains the original structure
     return comments
+
+def sort_comment_tree(comment_tree, sort_order=CommentSortOrder.DEFAULT):
+    """
+    Sort the comment tree according to the given sort order.
+    This function recursively sorts all levels of the tree.
+    
+    Args:
+        comment_tree: List of comments to sort
+        sort_order: CommentSortOrder enum value
+        
+    Returns:
+        Sorted list of comments
+    """
+    if not comment_tree:
+        return []
+    
+    # First, sort all children recursively
+    for comment in comment_tree:
+        if comment.get('children'):
+            comment['children'] = sort_comment_tree(comment['children'], sort_order)
+    
+    # Then sort this level
+    if sort_order == CommentSortOrder.NEWEST_FIRST:
+        # Sort by timestamp, newest first
+        return sorted(comment_tree, key=lambda c: c.get('time', 0), reverse=True)
+    elif sort_order == CommentSortOrder.OLDEST_FIRST:
+        # Sort by timestamp, oldest first
+        return sorted(comment_tree, key=lambda c: c.get('time', 0))
+    else:
+        # Default: maintain API order
+        return comment_tree
 
 @with_loading
 def fetch_comment_tree(comment_ids, max_threads=10):
@@ -288,7 +326,16 @@ def clear_screen():
     """Clear the terminal screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def show_navigation_options(current_page, total_pages, digit_buffer=""):
+def get_sort_order_display(sort_order):
+    """Get a display string for the current sort order."""
+    if sort_order == CommentSortOrder.NEWEST_FIRST:
+        return "Newest first"
+    elif sort_order == CommentSortOrder.OLDEST_FIRST:
+        return "Oldest first"
+    else:
+        return "Default"
+
+def show_navigation_options(current_page, total_pages, sort_order, digit_buffer=""):
     """
     Display navigation options for pagination.
     Now using single key navigation without pressing Enter.
@@ -296,6 +343,7 @@ def show_navigation_options(current_page, total_pages, digit_buffer=""):
     Args:
         current_page: The current page being displayed
         total_pages: Total number of pages
+        sort_order: Current comment sort order
         digit_buffer: Current digit buffer for multi-digit page navigation
     """
     separator = "=" * 40
@@ -305,8 +353,13 @@ def show_navigation_options(current_page, total_pages, digit_buffer=""):
     else:
         nav_header = "Navigation (press a key):"
     
+    # Display the current sort order
+    sort_display = f"Sort: {get_sort_order_display(sort_order)}"
+    if USE_COLORS:
+        sort_display = colorize(sort_display, ColorScheme.TITLE)
+    
     print(f"\n{separator}")
-    print(nav_header)
+    print(f"{nav_header} {sort_display}")
     
     # Previous page option
     if current_page > 1:
@@ -345,6 +398,18 @@ def show_navigation_options(current_page, total_pages, digit_buffer=""):
         direct_nav += f" - {buffer_display}"
     
     print(direct_nav)
+    
+    # Sort options
+    sort_options = "Press [s] to cycle sort order (newest/oldest/default)"
+    if USE_COLORS:
+        sort_options = colorize(sort_options, ColorScheme.NAV_ACTIVE)
+    print(sort_options)
+    
+    # First/last page shortcuts
+    firstlast_options = "Press [f] for first page, [l] for last page"
+    if USE_COLORS:
+        firstlast_options = colorize(firstlast_options, ColorScheme.NAV_ACTIVE)
+    print(firstlast_options)
     
     # Quit option
     quit_option = "Press [q] to quit"
@@ -386,6 +451,12 @@ def get_navigation_key(total_pages=0):
             return {'action': 'next-page'}
         elif key == 'q':
             return {'action': 'quit'}
+        elif key == 's':
+            return {'action': 'change-sort'}
+        elif key == 'f':
+            return {'action': 'first-page'}
+        elif key == 'l':
+            return {'action': 'last-page'}
         elif key.isdigit():
             # Add to the digit buffer
             current_time = time.time()
@@ -408,7 +479,7 @@ def get_navigation_key(total_pages=0):
                 # Timeout expired, process current buffer
                 if digit_buffer:
                     page = int(digit_buffer)
-                    return {'action': 'goto',  'page': page}
+                    return {'action': 'goto', 'page': page}
             
             # Continue collecting digits
             continue
@@ -424,7 +495,7 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
     """
     Display comments for a given story with interactive pagination support.
     Now using single-keystroke navigation without pressing Enter.
-    Supports multi-digit page numbers.
+    Supports multi-digit page numbers and comment sorting.
     
     Args:
         story_id: The ID of the story to show comments for
@@ -457,6 +528,8 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
     total_comments = 0
     total_pages = 0
     current_page = page_num
+    sort_order = CommentSortOrder.DEFAULT
+    needs_resort = False
     
     while True:
         clear_screen()
@@ -504,26 +577,34 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
             
             # This now automatically shows a loading indicator during fetch
             comment_tree = fetch_comment_tree(comment_ids, loading_message="Fetching comments...")
+            needs_resort = True
             
-            # Flatten the comment tree for easier pagination
-            message = "Processing comment structure..."
+        # Re-sort if needed
+        if needs_resort:
+            message = f"Sorting comments ({get_sort_order_display(sort_order)})..."
             if USE_COLORS:
                 message = colorize(message, ColorScheme.INFO)
             print(message)
             
-            loader = LoadingIndicator(message="Organizing comments for display...")
+            # Sort comments according to current sort order
+            loader = LoadingIndicator(message=f"Sorting comments ({get_sort_order_display(sort_order)})...")
             loader.start()
             try:
-                flat_comments, indent_levels = flatten_comment_tree(comment_tree)
+                sorted_tree = sort_comment_tree(comment_tree, sort_order)
+                
+                # Flatten the comment tree for easier pagination
+                flat_comments, indent_levels = flatten_comment_tree(sorted_tree)
+                
+                total_comments = len(flat_comments)
+                total_pages = (total_comments + page_size - 1) // page_size
+                
+                # Validate page number
+                if current_page > total_pages and total_pages > 0:
+                    current_page = total_pages
+                
+                needs_resort = False
             finally:
                 loader.stop()
-            
-            total_comments = len(flat_comments)
-            total_pages = (total_comments + page_size - 1) // page_size
-            
-            # Validate page number
-            if current_page > total_pages and total_pages > 0:
-                current_page = total_pages
             
         # Show pagination info
         if USE_COLORS:
@@ -544,7 +625,7 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
         )
         
         # Display navigation options
-        show_navigation_options(current_page, total_pages)
+        show_navigation_options(current_page, total_pages, sort_order)
         
         # Get navigation key and process
         nav = get_navigation_key(total_pages)
@@ -553,10 +634,24 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
             current_page -= 1
         elif nav['action'] == 'next-page' and current_page < total_pages:
             current_page += 1
+        elif nav['action'] == 'first-page':
+            current_page = 1
+        elif nav['action'] == 'last-page':
+            current_page = total_pages
         elif nav['action'] == 'goto':
             page = nav['page']
             if 1 <= page <= total_pages:
                 current_page = page
+        elif nav['action'] == 'change-sort':
+            # Cycle through sort orders
+            if sort_order == CommentSortOrder.DEFAULT:
+                sort_order = CommentSortOrder.NEWEST_FIRST
+            elif sort_order == CommentSortOrder.NEWEST_FIRST:
+                sort_order = CommentSortOrder.OLDEST_FIRST
+            else:
+                sort_order = CommentSortOrder.DEFAULT
+            
+            needs_resort = True
         elif nav['action'] == 'quit':
             break
         elif nav['action'] == 'invalid':
