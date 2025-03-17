@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from .constants import URLS
 from .loading import with_loading, LoadingIndicator
 from .colors import ColorScheme, colorize, supports_color
+from .getch import getch
 
 # Check for color support
 USE_COLORS = supports_color()
@@ -286,104 +287,118 @@ def clear_screen():
     """Clear the terminal screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def show_navigation_menu(current_page, total_pages):
-    """Display navigation options for pagination."""
+def show_navigation_options(current_page, total_pages):
+    """
+    Display navigation options for pagination.
+    Now using single key navigation without pressing Enter.
+    """
     separator = "=" * 40
     if USE_COLORS:
         separator = colorize(separator, ColorScheme.NAV_HEADER)
-        nav_header = colorize("Navigation:", ColorScheme.NAV_HEADER)
+        nav_header = colorize("Navigation (press a key):", ColorScheme.NAV_HEADER)
     else:
-        nav_header = "Navigation:"
+        nav_header = "Navigation (press a key):"
     
     print(f"\n{separator}")
     print(nav_header)
     
     # Previous page option
     if current_page > 1:
-        prev_option = "[p] Previous page"
+        prev_option = "Press [p] for previous page"
         if USE_COLORS:
             prev_option = colorize(prev_option, ColorScheme.NAV_ACTIVE)
         print(prev_option)
     else:
-        prev_option = "[ ] Previous page (unavailable)"
+        prev_option = "Previous page (unavailable)"
         if USE_COLORS:
             prev_option = colorize(prev_option, ColorScheme.NAV_INACTIVE)
         print(prev_option)
     
     # Next page option
     if current_page < total_pages:
-        next_option = "[n] Next page"
+        next_option = "Press [n] for next page"
         if USE_COLORS:
             next_option = colorize(next_option, ColorScheme.NAV_ACTIVE)
         print(next_option)
     else:
-        next_option = "[ ] Next page (unavailable)"
+        next_option = "Next page (unavailable)"
         if USE_COLORS:
             next_option = colorize(next_option, ColorScheme.NAV_INACTIVE)
         print(next_option)
     
-    # Page navigation instructions
-    page_nav = f"Enter page number (1-{total_pages}) to jump directly to that page"
+    # Page number navigation
+    page_nav_header = "Direct page navigation:"
     if USE_COLORS:
-        page_nav = colorize(page_nav, ColorScheme.NAV_ACTIVE)
-    print(page_nav)
+        page_nav_header = colorize(page_nav_header, ColorScheme.NAV_HEADER)
+    print(page_nav_header)
+    
+    # Display page number options in chunks to avoid clutter
+    num_pages_to_show = min(total_pages, 9)  # Show at most 9 page options to avoid clutter
+    
+    current_group = (current_page - 1) // num_pages_to_show
+    start_page = current_group * num_pages_to_show + 1
+    end_page = min(start_page + num_pages_to_show - 1, total_pages)
+    
+    page_options = " ".join([
+        colorize(f"[{i}]", ColorScheme.NAV_ACTIVE if i != current_page else ColorScheme.TITLE)
+        if USE_COLORS else f"[{i}]"
+        for i in range(start_page, end_page + 1)
+    ])
+    
+    print(f"Pages {start_page}-{end_page}: {page_options}")
+    
+    if total_pages > num_pages_to_show:
+        if current_group > 0:
+            prev_group = "Press [,] to see previous page numbers"
+            if USE_COLORS:
+                prev_group = colorize(prev_group, ColorScheme.NAV_ACTIVE)
+            print(prev_group)
+            
+        if end_page < total_pages:
+            next_group = "Press [.] to see next page numbers"
+            if USE_COLORS:
+                next_group = colorize(next_group, ColorScheme.NAV_ACTIVE)
+            print(next_group)
     
     # Quit option
-    quit_option = "[q] Quit"
+    quit_option = "Press [q] to quit"
     if USE_COLORS:
         quit_option = colorize(quit_option, ColorScheme.NAV_ACTIVE)
     print(quit_option)
     
     print(separator)
-    
-    # Prompt for input
-    prompt = "\nEnter choice: "
-    if USE_COLORS:
-        prompt = colorize(prompt, ColorScheme.PROMPT)
-    
-    choice = input(prompt).strip().lower()
-    return choice
 
-def handle_navigation(choice, current_page, total_pages):
-    """Process user navigation choice and return the new page number."""
-    if choice == 'p' and current_page > 1:
-        return current_page - 1
-    elif choice == 'n' and current_page < total_pages:
-        return current_page + 1
-    elif choice == 'q':
-        return -1  # Signal to quit
-    else:
-        # Try to parse the choice as a page number
-        try:
-            page_num = int(choice)
-            if 1 <= page_num <= total_pages:
-                return page_num
-            else:
-                error_msg = f"Invalid page number. Must be between 1 and {total_pages}."
-                if USE_COLORS:
-                    error_msg = colorize(error_msg, ColorScheme.ERROR)
-                print(error_msg)
-                
-                continue_msg = "Press Enter to continue..."
-                if USE_COLORS:
-                    continue_msg = colorize(continue_msg, ColorScheme.PROMPT)
-                input(continue_msg)
-                return current_page
-        except ValueError:
-            error_msg = "Invalid choice. Use 'p' for previous, 'n' for next, a page number, or 'q' to quit."
-            if USE_COLORS:
-                error_msg = colorize(error_msg, ColorScheme.ERROR)
-            print(error_msg)
-            
-            continue_msg = "Press Enter to continue..."
-            if USE_COLORS:
-                continue_msg = colorize(continue_msg, ColorScheme.PROMPT)
-            input(continue_msg)
-            return current_page
+def get_navigation_key(current_page_group=0, total_pages=0, num_pages_to_show=9):
+    """
+    Get a single keystroke from the user for navigation.
+    Returns the selected page or navigation action.
+    """
+    # Get a single keystroke
+    key = getch().lower()
+    
+    # Check for navigation keys
+    if key == 'p':
+        return {'action': 'prev-page'}
+    elif key == 'n':
+        return {'action': 'next-page'}
+    elif key == 'q':
+        return {'action': 'quit'}
+    elif key == ',' and current_page_group > 0:
+        return {'action': 'prev-group'}
+    elif key == '.' and (current_page_group + 1) * num_pages_to_show < total_pages:
+        return {'action': 'next-group'}
+    elif key.isdigit() and 1 <= int(key) <= 9 and int(key) + current_page_group * num_pages_to_show <= total_pages:
+        # Convert digit to actual page number based on current group
+        page = int(key) + current_page_group * num_pages_to_show
+        return {'action': 'goto', 'page': page}
+    
+    # Invalid key, return None
+    return {'action': 'invalid'}
 
 def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
     """
     Display comments for a given story with interactive pagination support.
+    Now using single-keystroke navigation without pressing Enter.
     
     Args:
         story_id: The ID of the story to show comments for
@@ -416,6 +431,8 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
     total_comments = 0
     total_pages = 0
     current_page = page_num
+    current_page_group = 0
+    num_pages_to_show = 9  # Show at most 9 page numbers at once (1-9)
     
     while True:
         clear_screen()
@@ -447,10 +464,11 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
                 message = colorize(message, ColorScheme.INFO)
             print(message)
             
-            prompt = "\nPress Enter to quit..."
+            prompt = "\nPress any key to quit..."
             if USE_COLORS:
                 prompt = colorize(prompt, ColorScheme.PROMPT)
-            input(prompt)
+            print(prompt)
+            getch()  # Wait for any key
             return (0, 0, 0)
         
         # Fetch and process comments if not already cached
@@ -483,6 +501,9 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
             if current_page > total_pages and total_pages > 0:
                 current_page = total_pages
             
+            # Calculate initial page group
+            current_page_group = (current_page - 1) // num_pages_to_show
+            
         # Show pagination info
         if USE_COLORS:
             page_info = f"Page {colorize(str(current_page), ColorScheme.COUNT)} of " + \
@@ -501,13 +522,36 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
             flat_comments, indent_levels, page_size, current_page, width
         )
         
-        # Display navigation menu
-        choice = show_navigation_menu(current_page, total_pages)
-        new_page = handle_navigation(choice, current_page, total_pages)
+        # Display navigation options
+        show_navigation_options(current_page, total_pages)
         
-        if new_page == -1:  # User chose to quit
+        # Get navigation key and process
+        nav = get_navigation_key(current_page_group, total_pages, num_pages_to_show)
+        
+        if nav['action'] == 'prev-page' and current_page > 1:
+            current_page -= 1
+            # Update page group if needed
+            current_page_group = (current_page - 1) // num_pages_to_show
+        elif nav['action'] == 'next-page' and current_page < total_pages:
+            current_page += 1
+            # Update page group if needed
+            current_page_group = (current_page - 1) // num_pages_to_show
+        elif nav['action'] == 'goto':
+            current_page = nav['page']
+        elif nav['action'] == 'quit':
             break
+        elif nav['action'] == 'prev-group':
+            current_page_group -= 1
+        elif nav['action'] == 'next-group':
+            current_page_group += 1
+        elif nav['action'] == 'invalid':
+            # Invalid key, show a brief error message
+            if USE_COLORS:
+                error = colorize("Invalid key. Press any key to continue...", ColorScheme.ERROR)
+            else:
+                error = "Invalid key. Press any key to continue..."
             
-        current_page = new_page
+            print(f"\n{error}")
+            getch()  # Wait for any key before continuing
     
     return (total_pages, current_page, total_comments)
