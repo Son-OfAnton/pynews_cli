@@ -2,3 +2,4 @@ curses-menu==0.6.7
 requests==2.28.1
 alive-progress==2.4.1
 python-semantic-release==7.28.0
+html==0.0.5
