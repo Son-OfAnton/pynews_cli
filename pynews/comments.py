@@ -12,6 +12,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .constants import URLS
 from .loading import with_loading, LoadingIndicator
+from .colors import ColorScheme, colorize, supports_color
+
+# Check for color support
+USE_COLORS = supports_color()
 
 def fetch_item(item_id):
     """Fetch a single item (story or comment) from the HackerNews API."""
@@ -65,7 +69,10 @@ def _fetch_comment_tree_no_loading(comment_ids, max_threads=10):
                         queue.extend(comment['kids'])
                         
                 except Exception as e:
-                    print(f"Error fetching comment {item_id}: {e}")
+                    error_msg = f"Error fetching comment {item_id}: {e}"
+                    if USE_COLORS:
+                        error_msg = colorize(error_msg, ColorScheme.ERROR)
+                    print(error_msg)
     
     # Build the comment tree
     for comment_id, comment in id_to_comment.items():
@@ -97,9 +104,12 @@ def format_timestamp(unix_time):
     try:
         dt = datetime.datetime.fromtimestamp(unix_time)
         # Format: "Mar 17, 2023 at 10:30 AM"
-        return dt.strftime("%b %d, %Y at %I:%M %p")
+        timestamp = dt.strftime("%b %d, %Y at %I:%M %p")
+        if USE_COLORS:
+            timestamp = colorize(timestamp, ColorScheme.TIME)
+        return timestamp
     except (TypeError, ValueError):
-        return "Unknown time"
+        return colorize("Unknown time", ColorScheme.TIME) if USE_COLORS else "Unknown time"
 
 def clean_comment_text(text):
     """Clean and format comment text for display."""
@@ -132,20 +142,52 @@ def format_comment(comment, indent_level=0, width=80):
     if not comment:
         return ""
     
+    indent_str = '  ' * indent_level
+    
+    # Format the author and timestamp
+    username = comment.get('by', 'Anonymous')
+    if USE_COLORS:
+        username = colorize(username, ColorScheme.AUTHOR)
+        border_char = colorize("┌─", ColorScheme.COMMENT_BORDER)
+    else:
+        border_char = "┌─"
+        
     # Basic info line with author and timestamp
-    header = f"{'  ' * indent_level}┌─ {comment.get('by', 'Anonymous')} · {format_timestamp(comment.get('time', 0))}"
+    header = f"{indent_str}{border_char} {username} · {format_timestamp(comment.get('time', 0))}"
     
     # Format and wrap the comment text
     text = clean_comment_text(comment.get('text', ''))
+    
+    if USE_COLORS:
+        line_prefix = colorize(indent_str + '│ ', ColorScheme.COMMENT_BORDER)
+    else:
+        line_prefix = indent_str + '│ '
+    
     wrapper = textwrap.TextWrapper(
-        initial_indent='  ' * indent_level + '│ ', 
-        subsequent_indent='  ' * indent_level + '│ ',
+        initial_indent=line_prefix, 
+        subsequent_indent=line_prefix,
         width=width
     )
-    wrapped_text = wrapper.fill(text) if text else '  ' * indent_level + '│ [No content]'
+    
+    if text:
+        wrapped_text = wrapper.fill(text)
+        if USE_COLORS:
+            # We need to add color after wrapping to avoid messing up the width calculations
+            # but we need to maintain the colored border, so we replace just the text part
+            parts = wrapped_text.split(line_prefix)
+            colored_parts = [line_prefix + colorize(p, ColorScheme.COMMENT_TEXT) for p in parts[1:]]
+            wrapped_text = parts[0] + ''.join(colored_parts)
+    else:
+        no_content = "[No content]"
+        if USE_COLORS:
+            no_content = colorize(no_content, ColorScheme.COMMENT_TEXT)
+        wrapped_text = line_prefix + no_content
     
     # Add footer
-    footer = f"{'  ' * indent_level}└{'─' * 30}"
+    if USE_COLORS:
+        footer = indent_str + colorize("└" + "─" * 30, ColorScheme.COMMENT_BORDER)
+    else:
+        footer = f"{indent_str}└{'─' * 30}"
     
     return f"{header}\n{wrapped_text}\n{footer}"
 
@@ -202,7 +244,10 @@ def display_page_of_comments(flat_comments, indent_levels, page_size, page_num, 
     
     # Check if we have comments in this page range
     if start_idx >= len(flat_comments):
-        print("\nNo more comments to display.")
+        message = "\nNo more comments to display."
+        if USE_COLORS:
+            message = colorize(message, ColorScheme.INFO)
+        print(message)
         return False
     
     # Get the slice of comments for this page
@@ -210,7 +255,10 @@ def display_page_of_comments(flat_comments, indent_levels, page_size, page_num, 
     page_indents = indent_levels[start_idx:end_idx]
     
     if not page_comments:
-        print("\nNo more comments to display.")
+        message = "\nNo more comments to display."
+        if USE_COLORS:
+            message = colorize(message, ColorScheme.INFO)
+        print(message)
         return False
     
     # Print each comment with its proper indentation
@@ -240,24 +288,60 @@ def clear_screen():
 
 def show_navigation_menu(current_page, total_pages):
     """Display navigation options for pagination."""
-    print("\n" + "=" * 40)
-    print("Navigation:")
+    separator = "=" * 40
+    if USE_COLORS:
+        separator = colorize(separator, ColorScheme.NAV_HEADER)
+        nav_header = colorize("Navigation:", ColorScheme.NAV_HEADER)
+    else:
+        nav_header = "Navigation:"
     
+    print(f"\n{separator}")
+    print(nav_header)
+    
+    # Previous page option
     if current_page > 1:
-        print("[p] Previous page")
+        prev_option = "[p] Previous page"
+        if USE_COLORS:
+            prev_option = colorize(prev_option, ColorScheme.NAV_ACTIVE)
+        print(prev_option)
     else:
-        print("[ ] Previous page (unavailable)")
-        
+        prev_option = "[ ] Previous page (unavailable)"
+        if USE_COLORS:
+            prev_option = colorize(prev_option, ColorScheme.NAV_INACTIVE)
+        print(prev_option)
+    
+    # Next page option
     if current_page < total_pages:
-        print("[n] Next page")
+        next_option = "[n] Next page"
+        if USE_COLORS:
+            next_option = colorize(next_option, ColorScheme.NAV_ACTIVE)
+        print(next_option)
     else:
-        print("[ ] Next page (unavailable)")
+        next_option = "[ ] Next page (unavailable)"
+        if USE_COLORS:
+            next_option = colorize(next_option, ColorScheme.NAV_INACTIVE)
+        print(next_option)
     
-    print("[g] Go to page (enter number)")
-    print("[q] Quit")
-    print("=" * 40)
+    # Go to page option
+    goto_option = "[g] Go to page (enter number)"
+    if USE_COLORS:
+        goto_option = colorize(goto_option, ColorScheme.NAV_ACTIVE)
+    print(goto_option)
     
-    choice = input("\nEnter choice: ").strip().lower()
+    # Quit option
+    quit_option = "[q] Quit"
+    if USE_COLORS:
+        quit_option = colorize(quit_option, ColorScheme.NAV_ACTIVE)
+    print(quit_option)
+    
+    print(separator)
+    
+    # Prompt for input
+    prompt = "\nEnter choice: "
+    if USE_COLORS:
+        prompt = colorize(prompt, ColorScheme.PROMPT)
+    
+    choice = input(prompt).strip().lower()
     return choice
 
 def handle_navigation(choice, current_page, total_pages):
@@ -267,23 +351,49 @@ def handle_navigation(choice, current_page, total_pages):
     elif choice == 'n' and current_page < total_pages:
         return current_page + 1
     elif choice == 'g':
+        # Prompt for page number
+        prompt = f"Enter page number (1-{total_pages}): "
+        if USE_COLORS:
+            prompt = colorize(prompt, ColorScheme.PROMPT)
+        
         try:
-            page_num = int(input(f"Enter page number (1-{total_pages}): "))
+            page_num = int(input(prompt))
             if 1 <= page_num <= total_pages:
                 return page_num
             else:
-                print(f"Invalid page number. Must be between 1 and {total_pages}.")
-                input("Press Enter to continue...")
+                error_msg = f"Invalid page number. Must be between 1 and {total_pages}."
+                if USE_COLORS:
+                    error_msg = colorize(error_msg, ColorScheme.ERROR)
+                print(error_msg)
+                
+                continue_msg = "Press Enter to continue..."
+                if USE_COLORS:
+                    continue_msg = colorize(continue_msg, ColorScheme.PROMPT)
+                input(continue_msg)
                 return current_page
         except ValueError:
-            print("Invalid input. Please enter a number.")
-            input("Press Enter to continue...")
+            error_msg = "Invalid input. Please enter a number."
+            if USE_COLORS:
+                error_msg = colorize(error_msg, ColorScheme.ERROR)
+            print(error_msg)
+            
+            continue_msg = "Press Enter to continue..."
+            if USE_COLORS:
+                continue_msg = colorize(continue_msg, ColorScheme.PROMPT)
+            input(continue_msg)
             return current_page
     elif choice == 'q':
         return -1  # Signal to quit
     else:
-        print("Invalid choice.")
-        input("Press Enter to continue...")
+        error_msg = "Invalid choice."
+        if USE_COLORS:
+            error_msg = colorize(error_msg, ColorScheme.ERROR)
+        print(error_msg)
+        
+        continue_msg = "Press Enter to continue..."
+        if USE_COLORS:
+            continue_msg = colorize(continue_msg, ColorScheme.PROMPT)
+        input(continue_msg)
         return current_page
 
 def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
@@ -308,7 +418,10 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
         loader.stop()
         
     if not story:
-        print(f"Error: Could not fetch story with ID {story_id}")
+        error_msg = f"Error: Could not fetch story with ID {story_id}"
+        if USE_COLORS:
+            error_msg = colorize(error_msg, ColorScheme.ERROR)
+        print(error_msg)
         return (0, 0, 0)
     
     # Initialize cached data
@@ -323,26 +436,54 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
         clear_screen()
         
         # Display story information
-        print(f"\n=== Comments for: {story.get('title', 'Unknown Story')} ===")
-        print(f"By {story.get('by', 'Unknown')} · {format_timestamp(story.get('time', 0))}")
-        print(f"Points: {story.get('score', 0)} · URL: {story.get('url', '[No URL]')}\n")
+        if USE_COLORS:
+            title = colorize(f"\n=== Comments for: {story.get('title', 'Unknown Story')} ===", 
+                           ColorScheme.TITLE)
+            author_line = f"By {colorize(story.get('by', 'Unknown'), ColorScheme.AUTHOR)} · {format_timestamp(story.get('time', 0))}"
+            points = colorize(str(story.get('score', 0)), ColorScheme.POINTS)
+            url = story.get('url', '[No URL]')
+            if url != '[No URL]':
+                url = colorize(url, ColorScheme.URL)
+            info_line = f"Points: {points} · URL: {url}\n"
+        else:
+            title = f"\n=== Comments for: {story.get('title', 'Unknown Story')} ==="
+            author_line = f"By {story.get('by', 'Unknown')} · {format_timestamp(story.get('time', 0))}"
+            info_line = f"Points: {story.get('score', 0)} · URL: {story.get('url', '[No URL]')}\n"
+        
+        print(title)
+        print(author_line)
+        print(info_line)
         
         # Check if the story has comments
         comment_ids = story.get('kids', [])
         if not comment_ids:
-            print("This story has no comments.")
-            input("\nPress Enter to quit...")
+            message = "This story has no comments."
+            if USE_COLORS:
+                message = colorize(message, ColorScheme.INFO)
+            print(message)
+            
+            prompt = "\nPress Enter to quit..."
+            if USE_COLORS:
+                prompt = colorize(prompt, ColorScheme.PROMPT)
+            input(prompt)
             return (0, 0, 0)
         
         # Fetch and process comments if not already cached
         if comment_tree is None:
-            print(f"Retrieving comments for this story...")
+            message = f"Retrieving comments for this story..."
+            if USE_COLORS:
+                message = colorize(message, ColorScheme.INFO)
+            print(message)
             
             # This now automatically shows a loading indicator during fetch
             comment_tree = fetch_comment_tree(comment_ids, loading_message="Fetching comments...")
             
             # Flatten the comment tree for easier pagination
-            print("Processing comment structure...")
+            message = "Processing comment structure..."
+            if USE_COLORS:
+                message = colorize(message, ColorScheme.INFO)
+            print(message)
+            
             loader = LoadingIndicator(message="Organizing comments for display...")
             loader.start()
             try:
@@ -358,8 +499,17 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
                 current_page = total_pages
             
         # Show pagination info
-        print(f"Page {current_page} of {total_pages} (Total comments: {total_comments})")
-        print("=" * width)
+        if USE_COLORS:
+            page_info = f"Page {colorize(str(current_page), ColorScheme.COUNT)} of " + \
+                       f"{colorize(str(total_pages), ColorScheme.COUNT)} " + \
+                       f"(Total comments: {colorize(str(total_comments), ColorScheme.COUNT)})"
+            separator = colorize("=" * width, ColorScheme.HEADER)
+        else:
+            page_info = f"Page {current_page} of {total_pages} (Total comments: {total_comments})"
+            separator = "=" * width
+        
+        print(page_info)
+        print(separator)
         
         # Display comments for the current page
         has_comments = display_page_of_comments(

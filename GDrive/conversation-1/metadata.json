@@ -51,6 +51,17 @@
 			"issue_comment": "The issue can be found on page 4.",
 			"issue_source": "pynews/comments.py", 
 			"comment": "There is an issue regarding rendering special characters in the comments on model A."
+		},
+		{
+			"prompt": "Please add colors for better UI/UX. This makes navigation and interaction with the app smoother.",
+			"hfi_id": "72a02387-6680-490b-a5a2-0719c06f64ff",
+			"choice": -2,
+			"gdrive": "",
+			"usecase": "feature_implementation",	
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 4.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "There is an issue regarding rendering special characters in the comments on model A."
 		}
   ]
 }

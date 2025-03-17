@@ -6,6 +6,8 @@ import time
 import threading
 from itertools import cycle
 
+from .colors import ColorScheme, colorize, supports_color
+
 class LoadingIndicator:
     """
     A simple loading indicator that shows animation while a process is running.
@@ -22,15 +24,21 @@ class LoadingIndicator:
         self.animation = animation or ['⣾', '⣷', '⣯', '⣟', '⡿', '⢿', '⣻', '⣽']
         self._running = False
         self._thread = None
+        self.use_colors = supports_color()
     
     def _animate(self):
         """Animation loop that runs in a separate thread."""
         spinner = cycle(self.animation)
-        sys.stdout.write(f"\r{self.message} ")
+        
+        # Colorize the message if supported
+        display_message = colorize(self.message, ColorScheme.LOADING) if self.use_colors else self.message
+        sys.stdout.write(f"\r{display_message} ")
         
         while self._running:
             char = next(spinner)
-            sys.stdout.write(f"\r{self.message} {char}")
+            # Colorize the spinner character if supported
+            display_char = colorize(char, ColorScheme.LOADING) if self.use_colors else char
+            sys.stdout.write(f"\r{display_message} {display_char}")
             sys.stdout.flush()
             time.sleep(0.1)
         
