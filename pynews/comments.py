@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
 
 from .constants import URLS
-from .loading import with_loading, LoadingIndicator
+from .loading import with_loading, with_progress, LoadingIndicator, ProgressBar, IndeterminateProgressBar
 from .colors import ColorScheme, colorize, supports_color
 from .getch import getch
 
@@ -35,10 +35,15 @@ def fetch_item(item_id):
     except requests.RequestException:
         return None
 
-def _fetch_comment_tree_no_loading(comment_ids, max_threads=10):
+def fetch_comment_tree(comment_ids, max_threads=10, progress_callback=None):
     """
     Fetch all comments for the given comment IDs, including child comments.
     Returns a list of comment dictionaries with a 'children' field.
+    
+    Args:
+        comment_ids: List of comment IDs to fetch
+        max_threads: Maximum number of concurrent requests
+        progress_callback: Callback function to update progress
     """
     if not comment_ids:
         return []
@@ -49,6 +54,13 @@ def _fetch_comment_tree_no_loading(comment_ids, max_threads=10):
     # Queue to track comment IDs to fetch
     queue = list(comment_ids)
     processed_ids = set()
+    
+    # Estimate total operations for progress tracking
+    if progress_callback:
+        # Initial queue + potential child comments (estimate)
+        estimated_total = len(queue) * 1.5  # Rough estimate assuming 50% have children
+        current_progress = 0
+        progress_callback(0)  # Initialize progress to 0
     
     while queue:
         batch = [item_id for item_id in queue[:max_threads] if item_id not in processed_ids]
@@ -77,6 +89,12 @@ def _fetch_comment_tree_no_loading(comment_ids, max_threads=10):
                     if 'kids' in comment and comment['kids']:
                         queue.extend(comment['kids'])
                         
+                    # Update progress
+                    if progress_callback:
+                        current_progress += 1
+                        progress_percent = min(int((current_progress / estimated_total) * 100), 99)
+                        progress_callback(progress_percent)
+                        
                 except Exception as e:
                     error_msg = f"Error fetching comment {item_id}: {e}"
                     if USE_COLORS:
@@ -94,11 +112,15 @@ def _fetch_comment_tree_no_loading(comment_ids, max_threads=10):
             parent = id_to_comment[parent_id]
             parent['children'].append(comment)
     
+    # Final progress update to 100%
+    if progress_callback:
+        progress_callback(100)
+    
     # Comments come from the API sorted by date (newest first) at each level
     # This maintains the original structure
     return comments
 
-def sort_comment_tree(comment_tree, sort_order=CommentSortOrder.DEFAULT):
+def sort_comment_tree(comment_tree, sort_order=CommentSortOrder.DEFAULT, progress_callback=None):
     """
     Sort the comment tree according to the given sort order.
     This function recursively sorts all levels of the tree.
@@ -106,6 +128,7 @@ def sort_comment_tree(comment_tree, sort_order=CommentSortOrder.DEFAULT):
     Args:
         comment_tree: List of comments to sort
         sort_order: CommentSortOrder enum value
+        progress_callback: Callback function to update progress
         
     Returns:
         Sorted list of comments
@@ -113,31 +136,44 @@ def sort_comment_tree(comment_tree, sort_order=CommentSortOrder.DEFAULT):
     if not comment_tree:
         return []
     
-    # First, sort all children recursively
-    for comment in comment_tree:
-        if comment.get('children'):
-            comment['children'] = sort_comment_tree(comment['children'], sort_order)
+    total_comments = count_comment_tree(comment_tree)
+    processed = 0
     
-    # Then sort this level
-    if sort_order == CommentSortOrder.NEWEST_FIRST:
-        # Sort by timestamp, newest first
-        return sorted(comment_tree, key=lambda c: c.get('time', 0), reverse=True)
-    elif sort_order == CommentSortOrder.OLDEST_FIRST:
-        # Sort by timestamp, oldest first
-        return sorted(comment_tree, key=lambda c: c.get('time', 0))
-    else:
-        # Default: maintain API order
-        return comment_tree
-
-@with_loading
-def fetch_comment_tree(comment_ids, max_threads=10):
-    """
-    Fetch all comments for the given comment IDs, including child comments.
-    Returns a list of comment dictionaries with a 'children' field.
+    if progress_callback:
+        progress_callback(0)  # Initialize progress
     
-    This version includes a loading indicator while fetching.
-    """
-    return _fetch_comment_tree_no_loading(comment_ids, max_threads)
+    def sort_level(comments, level=0):
+        nonlocal processed
+        
+        # First, sort all children recursively
+        for i, comment in enumerate(comments):
+            if comment.get('children'):
+                comment['children'] = sort_level(comment['children'], level + 1)
+            
+            # Update progress after processing each comment
+            if progress_callback:
+                processed += 1
+                progress_percent = min(int((processed / total_comments) * 100), 99)
+                progress_callback(progress_percent)
+        
+        # Then sort this level
+        if sort_order == CommentSortOrder.NEWEST_FIRST:
+            # Sort by timestamp, newest first
+            return sorted(comments, key=lambda c: c.get('time', 0), reverse=True)
+        elif sort_order == CommentSortOrder.OLDEST_FIRST:
+            # Sort by timestamp, oldest first
+            return sorted(comments, key=lambda c: c.get('time', 0))
+        else:
+            # Default: maintain API order
+            return comments
+    
+    result = sort_level(comment_tree)
+    
+    # Final progress update to 100%
+    if progress_callback:
+        progress_callback(100)
+        
+    return result
 
 def format_timestamp(unix_time):
     """Convert Unix timestamp to a human-readable format."""
@@ -231,11 +267,20 @@ def format_comment(comment, indent_level=0, width=80):
     
     return f"{header}\n{wrapped_text}\n{footer}"
 
-def flatten_comment_tree(comments, flat_list=None, indent_levels=None):
+def flatten_comment_tree(comments, flat_list=None, indent_levels=None, 
+                         progress_callback=None, base_progress=0, total_progress=100):
     """
     Convert a nested comment tree into a flat list while preserving indent information.
     This is used to enable proper pagination across the entire comment hierarchy.
     
+    Args:
+        comments: The nested comment tree to flatten
+        flat_list: Optional existing flat list to append to
+        indent_levels: Optional existing indent levels list to append to
+        progress_callback: Optional callback function to update progress
+        base_progress: Base progress percentage (0-100) to start from
+        total_progress: Total progress percentage range (typically 100)
+        
     Returns:
         tuple: (flat_list, indent_levels)
         - flat_list: A single flat list of all comments
@@ -245,25 +290,45 @@ def flatten_comment_tree(comments, flat_list=None, indent_levels=None):
         flat_list = []
         indent_levels = []
     
-    for comment in comments:
-        # Add this comment to the flat list
-        flat_list.append(comment)
-        indent_levels.append(0)  # Root level indentation
+    # Count total comments for progress tracking
+    if progress_callback:
+        total_comments = count_comment_tree(comments)
+        if total_comments == 0:
+            # No comments to process
+            progress_callback(base_progress + total_progress)
+            return flat_list, indent_levels
         
-        # Process any children recursively with increased indentation
-        if 'children' in comment and comment['children']:
-            _flatten_children(comment['children'], flat_list, indent_levels, level=1)
+        processed = 0
+        progress_callback(base_progress)  # Initialize progress
+    
+    def flatten_with_progress(comments, level=0):
+        nonlocal processed
+        
+        for comment in comments:
+            # Add this comment to the flat list
+            flat_list.append(comment)
+            indent_levels.append(level)
+            
+            # Update progress
+            if progress_callback:
+                processed += 1
+                progress_percent = base_progress + min(
+                    int((processed / total_comments) * total_progress), 
+                    total_progress - 1
+                )
+                progress_callback(progress_percent)
+            
+            # Process any children recursively
+            if 'children' in comment and comment['children']:
+                flatten_with_progress(comment['children'], level + 1)
+    
+    flatten_with_progress(comments)
+    
+    # Final progress update
+    if progress_callback:
+        progress_callback(base_progress + total_progress)
     
     return flat_list, indent_levels
-
-def _flatten_children(children, flat_list, indent_levels, level):
-    """Helper function for flatten_comment_tree to process nested children."""
-    for child in children:
-        flat_list.append(child)
-        indent_levels.append(level)
-        
-        if 'children' in child and child['children']:
-            _flatten_children(child['children'], flat_list, indent_levels, level + 1)
 
 def display_page_of_comments(flat_comments, indent_levels, page_size, page_num, width=80):
     """
@@ -575,8 +640,25 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
                 message = colorize(message, ColorScheme.INFO)
             print(message)
             
-            # This now automatically shows a loading indicator during fetch
-            comment_tree = fetch_comment_tree(comment_ids, loading_message="Fetching comments...")
+            # Create a progress bar for fetching comments
+            progress_bar = ProgressBar(
+                total=100, 
+                prefix='Fetching Comments:',
+                suffix='Complete', 
+                length=50
+            )
+            progress_bar.start()
+            
+            try:
+                # Fetch comments with progress updates
+                comment_tree = fetch_comment_tree(
+                    comment_ids, 
+                    max_threads=10,
+                    progress_callback=progress_bar.update
+                )
+            finally:
+                progress_bar.stop()
+                
             needs_resort = True
             
         # Re-sort if needed
@@ -586,25 +668,51 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
                 message = colorize(message, ColorScheme.INFO)
             print(message)
             
-            # Sort comments according to current sort order
-            loader = LoadingIndicator(message=f"Sorting comments ({get_sort_order_display(sort_order)})...")
-            loader.start()
+            # Create progress bar for sorting
+            sort_progress = ProgressBar(
+                total=100, 
+                prefix=f'Sorting ({get_sort_order_display(sort_order)}):',
+                suffix='Complete', 
+                length=50
+            )
+            sort_progress.start()
+            
             try:
-                sorted_tree = sort_comment_tree(comment_tree, sort_order)
-                
-                # Flatten the comment tree for easier pagination
-                flat_comments, indent_levels = flatten_comment_tree(sorted_tree)
-                
-                total_comments = len(flat_comments)
-                total_pages = (total_comments + page_size - 1) // page_size
-                
-                # Validate page number
-                if current_page > total_pages and total_pages > 0:
-                    current_page = total_pages
-                
-                needs_resort = False
+                # Sort with progress updates
+                sorted_tree = sort_comment_tree(
+                    comment_tree, 
+                    sort_order,
+                    progress_callback=sort_progress.update
+                )
             finally:
-                loader.stop()
+                sort_progress.stop()
+            
+            # Create progress bar for flattening
+            flatten_progress = ProgressBar(
+                total=100, 
+                prefix='Organizing Comments:',
+                suffix='Complete', 
+                length=50
+            )
+            flatten_progress.start()
+            
+            try:
+                # Flatten with progress updates
+                flat_comments, indent_levels = flatten_comment_tree(
+                    sorted_tree,
+                    progress_callback=flatten_progress.update
+                )
+            finally:
+                flatten_progress.stop()
+            
+            total_comments = len(flat_comments)
+            total_pages = (total_comments + page_size - 1) // page_size
+            
+            # Validate page number
+            if current_page > total_pages and total_pages > 0:
+                current_page = total_pages
+            
+            needs_resort = False
             
         # Show pagination info
         if USE_COLORS:
