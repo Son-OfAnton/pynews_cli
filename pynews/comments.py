@@ -11,6 +11,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .constants import URLS
+from .loading import with_loading, LoadingIndicator
 
 def fetch_item(item_id):
     """Fetch a single item (story or comment) from the HackerNews API."""
@@ -21,7 +22,7 @@ def fetch_item(item_id):
     except requests.RequestException:
         return None
 
-def fetch_comment_tree(comment_ids, max_threads=10):
+def _fetch_comment_tree_no_loading(comment_ids, max_threads=10):
     """
     Fetch all comments for the given comment IDs, including child comments.
     Returns a list of comment dictionaries with a 'children' field.
@@ -79,12 +80,17 @@ def fetch_comment_tree(comment_ids, max_threads=10):
             
     # Sort comments by timestamp
     comments.sort(key=lambda c: c.get('time', 0), reverse=True)
-    
-    # For debugging
-    # total = count_comment_tree(comments)
-    # print(f"Total comments fetched: {total}")
-    
     return comments
+
+@with_loading
+def fetch_comment_tree(comment_ids, max_threads=10):
+    """
+    Fetch all comments for the given comment IDs, including child comments.
+    Returns a list of comment dictionaries with a 'children' field.
+    
+    This version includes a loading indicator while fetching.
+    """
+    return _fetch_comment_tree_no_loading(comment_ids, max_threads)
 
 def format_timestamp(unix_time):
     """Convert Unix timestamp to a human-readable format."""
@@ -294,7 +300,13 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
         tuple: (total_pages, current_page_num, total_comments)
     """
     # First, fetch the story to get its comments
-    story = fetch_item(story_id)
+    loader = LoadingIndicator(message="Fetching story details...")
+    loader.start()
+    try:
+        story = fetch_item(story_id)
+    finally:
+        loader.stop()
+        
     if not story:
         print(f"Error: Could not fetch story with ID {story_id}")
         return (0, 0, 0)
@@ -324,17 +336,25 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
         
         # Fetch and process comments if not already cached
         if comment_tree is None:
-            print(f"Fetching comments...")
-            comment_tree = fetch_comment_tree(comment_ids)
+            print(f"Retrieving comments for this story...")
+            
+            # This now automatically shows a loading indicator during fetch
+            comment_tree = fetch_comment_tree(comment_ids, loading_message="Fetching comments...")
             
             # Flatten the comment tree for easier pagination
-            flat_comments, indent_levels = flatten_comment_tree(comment_tree)
+            print("Processing comment structure...")
+            loader = LoadingIndicator(message="Organizing comments for display...")
+            loader.start()
+            try:
+                flat_comments, indent_levels = flatten_comment_tree(comment_tree)
+            finally:
+                loader.stop()
             
             total_comments = len(flat_comments)
             total_pages = (total_comments + page_size - 1) // page_size
             
             # Validate page number
-            if current_page > total_pages:
+            if current_page > total_pages and total_pages > 0:
                 current_page = total_pages
             
         # Show pagination info

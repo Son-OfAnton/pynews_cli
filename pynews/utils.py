@@ -9,6 +9,7 @@ from cursesmenu import CursesMenu
 from cursesmenu.items import FunctionItem
 
 from .constants import URLS
+from .loading import with_loading, LoadingIndicator
 
 
 def clean_title(title):
@@ -20,8 +21,16 @@ def clean_title(title):
 
 def get_stories(type_url):
     """Return a list of ids of the 500 top stories."""
-    data = req.get(URLS[type_url])
-    return data.json()
+    loader = LoadingIndicator(message=f"Fetching {type_url} story IDs...")
+    loader.start()
+    try:
+        data = req.get(URLS[type_url])
+        return data.json()
+    except Exception as e:
+        print(f"Error fetching stories: {e}")
+        return None
+    finally:
+        loader.stop()
 
 
 def get_story(new):
@@ -42,7 +51,7 @@ def get_story(new):
         return data.json()
 
 
-def create_list_stories(list_id_stories, number_of_stories, shuffle, max_threads):
+def _create_list_stories_no_loading(list_id_stories, number_of_stories, shuffle, max_threads):
     """Show in a formatted way the stories for each item of the list."""
 
     list_stories = []
@@ -60,6 +69,30 @@ def create_list_stories(list_id_stories, number_of_stories, shuffle, max_threads
             ctrl_c=True,
         ):
             list_stories.append(future.result())
+
+    if shuffle:
+        random.shuffle(list_stories)
+    return list_stories
+
+
+@with_loading
+def create_list_stories(list_id_stories, number_of_stories, shuffle, max_threads):
+    """
+    Show in a formatted way the stories for each item of the list.
+    Now with loading indicator.
+    """
+    # Replace the alive_it progress bar with our loading indicator
+    list_stories = []
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        futures = {
+            executor.submit(get_story, new)
+            for new in list_id_stories[:number_of_stories]
+        }
+
+        for future in as_completed(futures):
+            result = future.result()
+            if result:  # Make sure we have a valid result
+                list_stories.append(result)
 
     if shuffle:
         random.shuffle(list_stories)
