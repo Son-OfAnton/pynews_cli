@@ -322,11 +322,11 @@ def show_navigation_menu(current_page, total_pages):
             next_option = colorize(next_option, ColorScheme.NAV_INACTIVE)
         print(next_option)
     
-    # Go to page option
-    goto_option = "[g] Go to page (enter number)"
+    # Page navigation instructions
+    page_nav = f"Enter page number (1-{total_pages}) to jump directly to that page"
     if USE_COLORS:
-        goto_option = colorize(goto_option, ColorScheme.NAV_ACTIVE)
-    print(goto_option)
+        page_nav = colorize(page_nav, ColorScheme.NAV_ACTIVE)
+    print(page_nav)
     
     # Quit option
     quit_option = "[q] Quit"
@@ -350,14 +350,12 @@ def handle_navigation(choice, current_page, total_pages):
         return current_page - 1
     elif choice == 'n' and current_page < total_pages:
         return current_page + 1
-    elif choice == 'g':
-        # Prompt for page number
-        prompt = f"Enter page number (1-{total_pages}): "
-        if USE_COLORS:
-            prompt = colorize(prompt, ColorScheme.PROMPT)
-        
+    elif choice == 'q':
+        return -1  # Signal to quit
+    else:
+        # Try to parse the choice as a page number
         try:
-            page_num = int(input(prompt))
+            page_num = int(choice)
             if 1 <= page_num <= total_pages:
                 return page_num
             else:
@@ -372,7 +370,7 @@ def handle_navigation(choice, current_page, total_pages):
                 input(continue_msg)
                 return current_page
         except ValueError:
-            error_msg = "Invalid input. Please enter a number."
+            error_msg = "Invalid choice. Use 'p' for previous, 'n' for next, a page number, or 'q' to quit."
             if USE_COLORS:
                 error_msg = colorize(error_msg, ColorScheme.ERROR)
             print(error_msg)
@@ -382,19 +380,6 @@ def handle_navigation(choice, current_page, total_pages):
                 continue_msg = colorize(continue_msg, ColorScheme.PROMPT)
             input(continue_msg)
             return current_page
-    elif choice == 'q':
-        return -1  # Signal to quit
-    else:
-        error_msg = "Invalid choice."
-        if USE_COLORS:
-            error_msg = colorize(error_msg, ColorScheme.ERROR)
-        print(error_msg)
-        
-        continue_msg = "Press Enter to continue..."
-        if USE_COLORS:
-            continue_msg = colorize(continue_msg, ColorScheme.PROMPT)
-        input(continue_msg)
-        return current_page
 
 def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
     """
