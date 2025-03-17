@@ -17,13 +17,16 @@ def main():
     
     # Handle comment viewing if requested
     if options.comments:
-        # The display_comments_for_story function now handles navigation internally
-        display_comments_for_story(
-            options.comments, 
-            page_size=options.page_size, 
-            page_num=options.page, 
-            width=options.width
-        )
+        # The display_comments_for_story function now handles pagination and navigation internally
+        try:
+            display_comments_for_story(
+                options.comments, 
+                page_size=options.page_size, 
+                page_num=options.page, 
+                width=options.width
+            )
+        except KeyboardInterrupt:
+            print("\nOperation cancelled by user.")
         return 0
     
     # Default behavior for story listing

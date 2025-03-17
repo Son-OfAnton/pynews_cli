@@ -79,6 +79,11 @@ def fetch_comment_tree(comment_ids, max_threads=10):
             
     # Sort comments by timestamp
     comments.sort(key=lambda c: c.get('time', 0), reverse=True)
+    
+    # For debugging
+    # total = count_comment_tree(comments)
+    # print(f"Total comments fetched: {total}")
+    
     return comments
 
 def format_timestamp(unix_time):
@@ -138,43 +143,79 @@ def format_comment(comment, indent_level=0, width=80):
     
     return f"{header}\n{wrapped_text}\n{footer}"
 
-def print_comment_tree(comments, page_size=10, indent_level=0, width=80, start_idx=0):
+def flatten_comment_tree(comments, flat_list=None, indent_levels=None):
     """
-    Print a list of comments with indentation for nested comments.
-    Supports pagination with page_size determining comments per page.
-    Returns the number of total comments in the tree.
-    """
-    total_shown = 0
-    total_count = 0
+    Convert a nested comment tree into a flat list while preserving indent information.
+    This is used to enable proper pagination across the entire comment hierarchy.
     
-    for i, comment in enumerate(comments):
-        if i < start_idx:
-            # Count child comments for skipped comments
-            child_count = count_comment_tree(comment.get('children', []))
-            total_count += 1 + child_count
-            continue
-            
-        if total_shown >= page_size:
-            # We've printed enough comments for this page
-            break
-            
-        # Print this comment
-        print(format_comment(comment, indent_level, width))
-        total_shown += 1
-        total_count += 1
+    Returns:
+        tuple: (flat_list, indent_levels)
+        - flat_list: A single flat list of all comments
+        - indent_levels: A parallel list with the indentation level for each comment
+    """
+    if flat_list is None:
+        flat_list = []
+        indent_levels = []
+    
+    for comment in comments:
+        # Add this comment to the flat list
+        flat_list.append(comment)
+        indent_levels.append(0)  # Root level indentation
         
-        # Print child comments recursively, with increased indentation
+        # Process any children recursively with increased indentation
         if 'children' in comment and comment['children']:
-            children_count = print_comment_tree(
-                comment['children'], 
-                page_size - total_shown,  # Adjust page size for what's left
-                indent_level + 1, 
-                width
-            )
-            total_count += children_count
-            total_shown += min(children_count, page_size - total_shown)
+            _flatten_children(comment['children'], flat_list, indent_levels, level=1)
     
-    return total_count
+    return flat_list, indent_levels
+
+def _flatten_children(children, flat_list, indent_levels, level):
+    """Helper function for flatten_comment_tree to process nested children."""
+    for child in children:
+        flat_list.append(child)
+        indent_levels.append(level)
+        
+        if 'children' in child and child['children']:
+            _flatten_children(child['children'], flat_list, indent_levels, level + 1)
+
+def display_page_of_comments(flat_comments, indent_levels, page_size, page_num, width=80):
+    """
+    Display a single page of comments from the flattened comment list.
+    
+    Args:
+        flat_comments: List of all comments in flat structure
+        indent_levels: Parallel list of indent levels for each comment
+        page_size: Number of comments per page
+        page_num: Which page to display (1-indexed)
+        width: Display width
+        
+    Returns:
+        bool: True if page had comments, False if page was empty
+    """
+    start_idx = (page_num - 1) * page_size
+    end_idx = start_idx + page_size
+    
+    # Check if we have comments in this page range
+    if start_idx >= len(flat_comments):
+        print("\nNo more comments to display.")
+        return False
+    
+    # Get the slice of comments for this page
+    page_comments = flat_comments[start_idx:end_idx]
+    page_indents = indent_levels[start_idx:end_idx]
+    
+    if not page_comments:
+        print("\nNo more comments to display.")
+        return False
+    
+    # Print each comment with its proper indentation
+    for i, (comment, indent) in enumerate(zip(page_comments, page_indents)):
+        print(format_comment(comment, indent, width))
+        
+        # Add extra spacing between comments for readability
+        if i < len(page_comments) - 1:
+            print()
+    
+    return True
 
 def count_comment_tree(comments):
     """Count the total number of comments in a tree, including all nested children."""
@@ -258,8 +299,10 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
         print(f"Error: Could not fetch story with ID {story_id}")
         return (0, 0, 0)
     
-    # Cache for the comment tree to avoid refetching
+    # Initialize cached data
     comment_tree = None
+    flat_comments = None
+    indent_levels = None
     total_comments = 0
     total_pages = 0
     current_page = page_num
@@ -279,26 +322,29 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
             input("\nPress Enter to quit...")
             return (0, 0, 0)
         
-        # Fetch comments if not already cached
+        # Fetch and process comments if not already cached
         if comment_tree is None:
             print(f"Fetching comments...")
             comment_tree = fetch_comment_tree(comment_ids)
-            total_comments = count_comment_tree(comment_tree)
+            
+            # Flatten the comment tree for easier pagination
+            flat_comments, indent_levels = flatten_comment_tree(comment_tree)
+            
+            total_comments = len(flat_comments)
             total_pages = (total_comments + page_size - 1) // page_size
             
             # Validate page number
             if current_page > total_pages:
                 current_page = total_pages
             
-        # Calculate pagination information
-        start_idx = (current_page - 1) * page_size
-        
         # Show pagination info
         print(f"Page {current_page} of {total_pages} (Total comments: {total_comments})")
         print("=" * width)
         
         # Display comments for the current page
-        print_comment_tree(comment_tree, page_size, start_idx=start_idx, width=width)
+        has_comments = display_page_of_comments(
+            flat_comments, indent_levels, page_size, current_page, width
+        )
         
         # Display navigation menu
         choice = show_navigation_menu(current_page, total_pages)

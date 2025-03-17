@@ -1,5 +1,5 @@
 {
-  "uuid": "uuid", 
+  "uuid": "e5dc86fc-6713-45ba-8d62-9622153367a3", 
   "model": "83aa91117c2fac3e25a3757eaa59f29ed3aeaf4dd7d3d384c673086c321e0644",
   "root_gdrive": "", 
   "workflow": "existing_codebase",
@@ -8,16 +8,38 @@
 	"description": ""
   },
   "prompts": [
-	{
-  	"prompt": "Implement a function that takes a story ID as input and retrieves all associated comments using the Hacker News Firebase API. Display comments in a structured format, including the author, comment text, and time posted in a paginated way. Ensure nested comments are properly formatted for readability.",
-  	"hfi_id": "",
-  	"choice": 3,
-  	"gdrive": "",
-  	"usecase": "feature_implementation",	
-  	"issue_type": "other",
-    "issue_comment": "The issue can be found on page 38.",
-  	"issue_source": "pynews/utils.py", 
-  	"comment": "Model A produces an error that randomly pops up. The error says `unhashable type: 'types.SimpleNamespace'`. This is possibly originated from the usage of the `alive-progress` library."
-	}
+		{
+			"prompt": "Implement a function that takes a story ID as input and retrieves all associated comments using the Hacker News Firebase API. Display comments in a structured format, including the author, comment text, and time posted in a paginated way. Ensure nested comments are properly formatted for readability.",
+			"hfi_id": "72a02387-6680-490b-a5a2-0719c06f64ff",
+			"choice": 3,
+			"gdrive": "",
+			"usecase": "feature_implementation",	
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 4.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "There is an issue regarding rendering special characters in the comments on model A."
+		},
+		{
+			"prompt": "Please add functionality to navigate to the previous and next pages.",
+			"hfi_id": "72a02387-6680-490b-a5a2-0719c06f64ff",
+			"choice": 2,
+			"gdrive": "",
+			"usecase": "feature_implementation",	
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 4.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "There is an issue regarding rendering special characters in the comments on model A."
+		},
+		{
+			"prompt": "Even though a story has many comments under it only the first few pages are visible. All the pages afterward are empty.",
+			"hfi_id": "72a02387-6680-490b-a5a2-0719c06f64ff",
+			"choice": -3,
+			"gdrive": "",
+			"usecase": "feature_implementation",	
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 4.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "There is an issue regarding rendering special characters in the comments on model A."
+		}
   ]
 }
