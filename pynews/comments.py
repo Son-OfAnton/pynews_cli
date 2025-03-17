@@ -8,6 +8,7 @@ import requests
 import time
 import sys
 import os
+import select
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .constants import URLS
@@ -287,10 +288,15 @@ def clear_screen():
     """Clear the terminal screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def show_navigation_options(current_page, total_pages):
+def show_navigation_options(current_page, total_pages, digit_buffer=""):
     """
     Display navigation options for pagination.
     Now using single key navigation without pressing Enter.
+    
+    Args:
+        current_page: The current page being displayed
+        total_pages: Total number of pages
+        digit_buffer: Current digit buffer for multi-digit page navigation
     """
     separator = "=" * 40
     if USE_COLORS:
@@ -326,39 +332,19 @@ def show_navigation_options(current_page, total_pages):
             next_option = colorize(next_option, ColorScheme.NAV_INACTIVE)
         print(next_option)
     
-    # Page number navigation
-    page_nav_header = "Direct page navigation:"
+    # Direct page navigation
+    direct_nav = f"Enter page number (1-{total_pages}) to go directly to that page"
     if USE_COLORS:
-        page_nav_header = colorize(page_nav_header, ColorScheme.NAV_HEADER)
-    print(page_nav_header)
+        direct_nav = colorize(direct_nav, ColorScheme.NAV_ACTIVE)
     
-    # Display page number options in chunks to avoid clutter
-    num_pages_to_show = min(total_pages, 9)  # Show at most 9 page options to avoid clutter
+    # If there's an active buffer, show it
+    if digit_buffer:
+        buffer_display = f"Current input: {digit_buffer}"
+        if USE_COLORS:
+            buffer_display = colorize(buffer_display, ColorScheme.TITLE)
+        direct_nav += f" - {buffer_display}"
     
-    current_group = (current_page - 1) // num_pages_to_show
-    start_page = current_group * num_pages_to_show + 1
-    end_page = min(start_page + num_pages_to_show - 1, total_pages)
-    
-    page_options = " ".join([
-        colorize(f"[{i}]", ColorScheme.NAV_ACTIVE if i != current_page else ColorScheme.TITLE)
-        if USE_COLORS else f"[{i}]"
-        for i in range(start_page, end_page + 1)
-    ])
-    
-    print(f"Pages {start_page}-{end_page}: {page_options}")
-    
-    if total_pages > num_pages_to_show:
-        if current_group > 0:
-            prev_group = "Press [,] to see previous page numbers"
-            if USE_COLORS:
-                prev_group = colorize(prev_group, ColorScheme.NAV_ACTIVE)
-            print(prev_group)
-            
-        if end_page < total_pages:
-            next_group = "Press [.] to see next page numbers"
-            if USE_COLORS:
-                next_group = colorize(next_group, ColorScheme.NAV_ACTIVE)
-            print(next_group)
+    print(direct_nav)
     
     # Quit option
     quit_option = "Press [q] to quit"
@@ -368,37 +354,77 @@ def show_navigation_options(current_page, total_pages):
     
     print(separator)
 
-def get_navigation_key(current_page_group=0, total_pages=0, num_pages_to_show=9):
+def get_navigation_key(total_pages=0):
     """
     Get a single keystroke from the user for navigation.
-    Returns the selected page or navigation action.
+    Supports multi-digit page numbers.
+    
+    Returns:
+        dict: Navigation action information
     """
-    # Get a single keystroke
-    key = getch().lower()
+    digit_buffer = ""
+    digit_timeout = 1.5  # seconds to wait for additional digits
+    last_digit_time = None
     
-    # Check for navigation keys
-    if key == 'p':
-        return {'action': 'prev-page'}
-    elif key == 'n':
-        return {'action': 'next-page'}
-    elif key == 'q':
-        return {'action': 'quit'}
-    elif key == ',' and current_page_group > 0:
-        return {'action': 'prev-group'}
-    elif key == '.' and (current_page_group + 1) * num_pages_to_show < total_pages:
-        return {'action': 'next-group'}
-    elif key.isdigit() and 1 <= int(key) <= 9 and int(key) + current_page_group * num_pages_to_show <= total_pages:
-        # Convert digit to actual page number based on current group
-        page = int(key) + current_page_group * num_pages_to_show
-        return {'action': 'goto', 'page': page}
-    
-    # Invalid key, return None
-    return {'action': 'invalid'}
+    while True:
+        # Display the current digit buffer if any
+        if digit_buffer:
+            if USE_COLORS:
+                buffer_msg = colorize(f"\rEntering page number: {digit_buffer}", ColorScheme.PROMPT)
+            else:
+                buffer_msg = f"\rEntering page number: {digit_buffer}"
+            sys.stdout.write(buffer_msg)
+            sys.stdout.flush()
+        
+        # Get a single keystroke
+        key = getch().lower()
+        
+        # Process navigation keys
+        if key == 'p':
+            return {'action': 'prev-page'}
+        elif key == 'n':
+            return {'action': 'next-page'}
+        elif key == 'q':
+            return {'action': 'quit'}
+        elif key.isdigit():
+            # Add to the digit buffer
+            current_time = time.time()
+            digit_buffer += key
+            last_digit_time = current_time
+            
+            # Check if we've exceeded the page range
+            if int(digit_buffer) > total_pages:
+                # We've gone beyond valid pages, truncate to max
+                digit_buffer = str(total_pages)
+            
+            # Wait a moment to see if user enters more digits
+            time.sleep(0.1)  # Small pause to catch quick consecutive keypresses
+            
+            # Check if there's more input available (non-blocking)
+            if select.select([sys.stdin], [], [], 0.0)[0]:
+                # More input is available, continue collecting
+                continue
+            elif time.time() - last_digit_time >= digit_timeout:
+                # Timeout expired, process current buffer
+                if digit_buffer:
+                    page = int(digit_buffer)
+                    return {'action': 'goto',  'page': page}
+            
+            # Continue collecting digits
+            continue
+        elif digit_buffer:
+            # Non-digit key pressed after digits, process the buffer
+            page = int(digit_buffer)
+            return {'action': 'goto', 'page': page}
+        else:
+            # Invalid key
+            return {'action': 'invalid'}
 
 def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
     """
     Display comments for a given story with interactive pagination support.
     Now using single-keystroke navigation without pressing Enter.
+    Supports multi-digit page numbers.
     
     Args:
         story_id: The ID of the story to show comments for
@@ -431,8 +457,6 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
     total_comments = 0
     total_pages = 0
     current_page = page_num
-    current_page_group = 0
-    num_pages_to_show = 9  # Show at most 9 page numbers at once (1-9)
     
     while True:
         clear_screen()
@@ -501,9 +525,6 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
             if current_page > total_pages and total_pages > 0:
                 current_page = total_pages
             
-            # Calculate initial page group
-            current_page_group = (current_page - 1) // num_pages_to_show
-            
         # Show pagination info
         if USE_COLORS:
             page_info = f"Page {colorize(str(current_page), ColorScheme.COUNT)} of " + \
@@ -526,24 +547,18 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
         show_navigation_options(current_page, total_pages)
         
         # Get navigation key and process
-        nav = get_navigation_key(current_page_group, total_pages, num_pages_to_show)
+        nav = get_navigation_key(total_pages)
         
         if nav['action'] == 'prev-page' and current_page > 1:
             current_page -= 1
-            # Update page group if needed
-            current_page_group = (current_page - 1) // num_pages_to_show
         elif nav['action'] == 'next-page' and current_page < total_pages:
             current_page += 1
-            # Update page group if needed
-            current_page_group = (current_page - 1) // num_pages_to_show
         elif nav['action'] == 'goto':
-            current_page = nav['page']
+            page = nav['page']
+            if 1 <= page <= total_pages:
+                current_page = page
         elif nav['action'] == 'quit':
             break
-        elif nav['action'] == 'prev-group':
-            current_page_group -= 1
-        elif nav['action'] == 'next-group':
-            current_page_group += 1
         elif nav['action'] == 'invalid':
             # Invalid key, show a brief error message
             if USE_COLORS:
