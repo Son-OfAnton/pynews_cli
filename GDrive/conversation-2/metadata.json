@@ -17,7 +17,29 @@
 			"issue_type": "other",
 			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
 			"issue_source": "pynews/comments.py",
-			"comment": "There is an issue regarding rendering special characters in the comments on model A."
+			"comment": "Unnecessary use of a whole Python file to test a URL from model B. It should have used CURL instead."
+		},
+    {
+      "prompt": "Now add a feature to show the author of the ASK story.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": 3,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
+			"issue_source": "pynews/comments.py",
+			"comment": "Model A The author name is being seen instead gibberish characters are seen."
+		},
+    {
+      "prompt": "Now add a functionality to show the score of the ASK story.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": 2,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
+			"issue_source": "pynews/comments.py",
+			"comment": "Model A The author name is being seen instead gibberish characters are seen."
 		}
 	]
 }

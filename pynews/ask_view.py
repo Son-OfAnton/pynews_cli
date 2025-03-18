@@ -9,7 +9,7 @@ from webbrowser import open as url_open
 
 from .colors import Colors, ColorScheme, colorize, supports_color
 from .getch import getch
-from .utils import get_story
+from .utils import get_story, format_score
 
 USE_COLORS = supports_color()
 
@@ -56,10 +56,47 @@ def clean_text(text):
     
     return text.strip()
 
+def create_score_bar(score, max_width=40):
+    """Create a visual bar representing the score."""
+    # Scale: ▁▂▃▄▅▆▇█
+    # Determine the number of blocks based on score
+    if score <= 0:
+        return "▁" * 5  # Minimum bar for non-positive scores
+    
+    # Scale logarithmically since HN scores can vary widely
+    import math
+    log_score = math.log10(score + 1)  # +1 to handle score=0
+    max_log = math.log10(1001)  # Scale against a score of 1000
+    ratio = min(log_score / max_log, 1.0)  # Cap at 1.0
+    
+    # Map to bar width
+    bar_width = int(max_width * ratio)
+    bar_width = max(5, bar_width)  # Ensure minimum width
+    
+    # Create the bar with gradient characters based on score
+    if score < 10:
+        bar = "▁" * bar_width
+    elif score < 25:
+        bar = "▂" * bar_width
+    elif score < 50:
+        bar = "▃" * bar_width
+    elif score < 100:
+        bar = "▄" * bar_width
+    elif score < 200:
+        bar = "▅" * bar_width
+    elif score < 500:
+        bar = "▆" * bar_width
+    elif score < 1000:
+        bar = "▇" * bar_width
+    else:
+        bar = "█" * bar_width
+    
+    return bar
+
 def display_ask_story_details(story_id):
     """
     Display detailed information about an Ask HN story, 
-    highlighting the author information.
+    highlighting the author information and score.
     """
     # Fetch the story details
     story = get_story(story_id)
@@ -88,18 +125,27 @@ def display_ask_story_details(story_id):
         print("\n" + "=" * 80)
         print(title)
     
+    # Display score prominently with a visual indicator
+    score_display = format_score(points)
+    score_bar = create_score_bar(points)
+    
+    if USE_COLORS:
+        print(f"\n{colorize('SCORE:', ColorScheme.SUBHEADER)} {colorize(score_display, ColorScheme.POINTS)}")
+        print(colorize(score_bar, ColorScheme.POINTS))
+    else:
+        print(f"\nSCORE: {score_display}")
+        print(score_bar)
+    
     # Display author information prominently
     if USE_COLORS:
         author_line = f"Posted by: {colorize(author, ColorScheme.AUTHOR)} on {format_timestamp(created_time)}"
-        points_text = colorize(str(points), ColorScheme.POINTS)
         comments_text = colorize(str(comment_count), ColorScheme.COUNT)
     else:
         author_line = f"Posted by: {author} on {format_timestamp(created_time)}"
-        points_text = str(points)
         comments_text = str(comment_count)
         
     print(f"\n{author_line}")
-    print(f"Points: {points_text} | Comments: {comments_text}")
+    print(f"Comments: {comments_text}")
     
     # Display the story content if available
     if text:
@@ -124,6 +170,7 @@ def display_ask_story_details(story_id):
         
     print("[v] View author profile")
     print("[c] View comments")
+    print("[u] Upvote story (opens in browser)")
     print("[q] Return to menu")
     
     # Get user input
@@ -136,6 +183,10 @@ def display_ask_story_details(story_id):
         elif key == 'c':
             # Return a signal to view comments
             return {'action': 'view_comments', 'id': story_id}
+        elif key == 'u':
+            # Open story in browser to upvote
+            url_open(f"https://news.ycombinator.com/item?id={story_id}")
+            break
         elif key == 'q':
             # Return to menu
             break

@@ -100,14 +100,28 @@ def create_list_stories(list_id_stories, number_of_stories, shuffle, max_threads
     return list_stories
 
 
+def format_score(score):
+    """Format score with a visual indicator of popularity."""
+    if score >= 100:
+        return f"⭐ {score} pts ⭐"  # Star for highly-scored stories
+    elif score >= 50:
+        return f"✓ {score} pts"  # Check mark for medium-scored stories
+    else:
+        return f"{score} pts"  # Plain format for lower scores
+
+
 def create_menu(list_dict_stories, type_new):
     """
     Create a menu with the stories to display.
-    For Ask HN stories, we'll include the author information.
+    For Ask HN stories, we'll include the author information and score.
     """
     title = f"Pynews - {type_new.capitalize()} stories"
     menu = CursesMenu(title, "Select the story and press enter")
     msg = "This story does not have a URL"
+    
+    # Sort the stories by score (highest first) if this is an Ask HN listing
+    if type_new == "ask":
+        list_dict_stories.sort(key=lambda x: x.get("score", 0), reverse=True)
     
     for i, story in enumerate(list_dict_stories):
         # Get the basic story information
@@ -115,10 +129,11 @@ def create_menu(list_dict_stories, type_new):
         author = story.get("by", "Anonymous")
         points = story.get("score", 0)
         
-        # Format the display title - For Ask HN stories, add author information
+        # Format the display title - For Ask HN stories, add author and score information
         if type_new == "ask":
-            # For Ask HN, format with author info
-            display_title = f"[{i+1}] {story_title} [by {author}, {points} points]"
+            # Format with score first to emphasize it, then author
+            score_display = format_score(points)
+            display_title = f"[{i+1}] [{score_display}] {story_title} [by {author}]"
         else:
             # For other story types, just use the title with index
             display_title = f"[{i+1}] {story_title}"
