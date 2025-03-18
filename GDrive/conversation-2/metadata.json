@@ -1,0 +1,23 @@
+{
+	"uuid": "2b085820-cda8-4a77-acce-2173e784490d",
+	"model": "83aa91117c2fac3e25a3757eaa59f29ed3aeaf4dd7d3d384c673086c321e0644",
+	"root_gdrive": "https://drive.google.com/drive/folders/1bCWBjvFr2sxvKi4CkrhZw1nnpHiVouYV?usp=sharing",
+	"workflow": "existing_codebase",
+	"codebase": {
+		"url": "https://github.com/mazulo/pynews_cli",
+		"description": "A CLI tool to read Hacker News stories."
+	},
+	"prompts": [
+		{
+			"prompt": "Ask: Fetch and display \"Ask HN\" stories. Develop a feature that retrieves the latest \"Ask HN\" stories from the API and displays them in the terminal. Include details such as title, author, score, number of comments, and submission time. Allow users to filter Ask HN posts by keyword.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": -2,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
+			"issue_source": "pynews/comments.py",
+			"comment": "There is an issue regarding rendering special characters in the comments on model A."
+		}
+	]
+}

@@ -12,6 +12,7 @@ def get_parser_options() -> argparse.Namespace:
             PyNews-CLI - News Collector from HackerNews API
             Usage: pynews [-t/--top-stories number_of_stories]
                           [-n/--news-stories number_of_stories]
+                          [-a/--ask-stories number_of_stories]
                           [-c/--comments story_id]
 
             If the number of stories is not supplied, will be showed 200 from the
@@ -27,6 +28,11 @@ def get_parser_options() -> argparse.Namespace:
                 $ pynews -n 10 # or
                 $ pynews --news-stories
                 This will show the 10 first new stories from the list of 500.
+            
+            - Get Ask HN Stories:
+                $ pynews -a 10 # or
+                $ pynews --ask-stories 10
+                This will show the 10 latest Ask HN stories.
                 
             - View Comments for a Story:
                 $ pynews -c 12345 # or
@@ -57,6 +63,15 @@ def get_parser_options() -> argparse.Namespace:
         const=200,
         type=int,
         help="Get the N new stories from HackerNews API",
+    )
+    
+    parser.add_argument(
+        "-a",
+        "--ask-stories",
+        nargs="?",
+        const=200,
+        type=int,
+        help="Get the N latest Ask HN stories from HackerNews API",
     )
 
     parser.add_argument(

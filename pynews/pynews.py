@@ -34,8 +34,10 @@ def main():
         param = options.top_stories, "top"
     elif options.news_stories:
         param = options.news_stories, "news"
+    elif options.ask_stories:
+        param = options.ask_stories, "ask"
     else:
-        print("Please specify either --top-stories or --news-stories or --comments")
+        print("Please specify either --top-stories, --news-stories, --ask-stories, or --comments")
         return 1
 
     list_data = None
