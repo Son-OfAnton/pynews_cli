@@ -15,6 +15,8 @@ def get_parser_options() -> argparse.Namespace:
                           [-a/--ask-stories number_of_stories]
                           [-c/--comments story_id]
                           [-d/--ask-details story_id]
+                          [--ask-top number_of_stories]
+                          [--ask-discussed number_of_stories]
 
             If the number of stories is not supplied, will be showed 200 from the
             500 stories.
@@ -33,17 +35,25 @@ def get_parser_options() -> argparse.Namespace:
             - Get Ask HN Stories:
                 $ pynews -a 10 # or
                 $ pynews --ask-stories 10
-                This will show the 10 latest Ask HN stories.
+                This will show the 10 latest Ask HN stories with scores and comment counts.
+                
+            - Get Top-Scored Ask HN Stories:
+                $ pynews --ask-top 10
+                This will show the 10 highest-scoring Ask HN stories.
+                
+            - Get Most-Discussed Ask HN Stories:
+                $ pynews --ask-discussed 10
+                This will show the 10 Ask HN stories with the most comments.
                 
             - View Comments for a Story:
                 $ pynews -c 12345 # or
                 $ pynews --comments 12345
                 This will show comments for story with ID 12345.
                 
-            - View Ask HN Story Details (including author):
+            - View Ask HN Story Details:
                 $ pynews -d 12345 # or
                 $ pynews --ask-details 12345
-                This will show details for an Ask HN story, highlighting the author.
+                This will show details for an Ask HN story with author, score, and comment count.
                 
             - Control Comment Pagination:
                 $ pynews -c 12345 -p 15 --page 2
@@ -79,6 +89,42 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N latest Ask HN stories from HackerNews API",
     )
+    
+    parser.add_argument(
+        "--ask-top",
+        nargs="?",
+        const=10,
+        type=int,
+        help="Get the N highest-scoring Ask HN stories",
+    )
+    
+    parser.add_argument(
+        "--ask-discussed",
+        nargs="?",
+        const=10,
+        type=int,
+        help="Get the N most commented Ask HN stories",
+    )
+
+    parser.add_argument(
+        "--min-score",
+        type=int,
+        default=0,
+        help="Minimum score threshold for Ask HN stories (used with --ask-top)",
+    )
+    
+    parser.add_argument(
+        "--min-comments",
+        type=int,
+        default=0,
+        help="Minimum comment threshold for Ask HN stories (used with --ask-discussed)",
+    )
+    
+    parser.add_argument(
+        "--sort-by-comments",
+        action="store_true",
+        help="Sort Ask HN stories by comment count instead of score",
+    )
 
     parser.add_argument(
         "-s",
@@ -109,7 +155,7 @@ def get_parser_options() -> argparse.Namespace:
         "-d",
         "--ask-details",
         type=int,
-        help="View details of an Ask HN story with the given ID, highlighting the author",
+        help="View details of an Ask HN story with the given ID, highlighting the author and score",
     )
     
     parser.add_argument(
@@ -136,4 +182,10 @@ def get_parser_options() -> argparse.Namespace:
     )
 
     options = parser.parse_args()
+    
+    # If --ask-discussed is used, set sort_by_comments to True
+    if options.ask_discussed:
+        options.sort_by_comments = True
+        options.ask_top = options.ask_discussed
+        
     return options

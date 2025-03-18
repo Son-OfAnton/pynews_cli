@@ -9,7 +9,7 @@ from .constants import DEFAULT_THREADS_NUMBER
 from .parser import get_parser_options
 from .utils import create_list_stories, create_menu, get_stories
 from .comments import display_comments_for_story
-from .ask_view import display_ask_story_details
+from .ask_view import display_ask_story_details, display_top_scored_ask_stories
 
 def handle_ask_story(story_id, page_size=10, width=80):
     """Handle detailed view of an Ask HN story with option to view comments."""
@@ -20,6 +20,26 @@ def handle_ask_story(story_id, page_size=10, width=80):
         display_comments_for_story(story_id, page_size=page_size, width=width)
     
     # Return to main menu otherwise
+
+def handle_top_ask_stories(limit=10, min_score=0, sort_by_comments=False, page_size=10, width=80):
+    """Handle the display of top Ask HN stories (by score or comments)."""
+    while True:
+        result = display_top_scored_ask_stories(limit, min_score, sort_by_comments)
+        
+        if not result or result.get('action') == 'return_to_menu':
+            break
+            
+        if result.get('action') == 'toggle_sort':
+            # Toggle between sorting by score and sorting by comments
+            sort_by_comments = result.get('sort_by_comments', False)
+            continue
+        
+        if result.get('action') == 'view_story':
+            story_result = display_ask_story_details(result.get('id'))
+            
+            # Check if user wants to view comments from the story view
+            if story_result and story_result.get('action') == 'view_comments':
+                display_comments_for_story(result.get('id'), page_size=page_size, width=width)
 
 def main():
     """Main entry point for the script."""
@@ -51,6 +71,20 @@ def main():
             print("\nOperation cancelled by user.")
         return 0
     
+    # Handle top-scored Ask HN stories if requested
+    if options.ask_top:
+        try:
+            handle_top_ask_stories(
+                limit=options.ask_top,
+                min_score=options.min_score,
+                sort_by_comments=options.sort_by_comments,
+                page_size=options.page_size,
+                width=options.width
+            )
+        except KeyboardInterrupt:
+            print("\nOperation cancelled by user.")
+        return 0
+    
     # Default behavior for story listing
     if options.top_stories:
         param = options.top_stories, "top"
@@ -59,7 +93,7 @@ def main():
     elif options.ask_stories:
         param = options.ask_stories, "ask"
     else:
-        print("Please specify either --top-stories, --news-stories, --ask-stories, or --comments")
+        print("Please specify either --top-stories, --news-stories, --ask-stories, --ask-top, or --comments")
         return 1
 
     list_data = None
@@ -90,7 +124,14 @@ def main():
         list_data, param[0], options.shuffle, max_threads
     )
 
-    menu = create_menu(list_dict_stories, param[1])
+    # For Ask stories, we can sort by score (default) or by comment count
+    sort_by_comments = param[1] == "ask" and options.sort_by_comments
+    
+    menu = create_menu(
+        list_dict_stories, 
+        param[1], 
+        sort_by_score=not sort_by_comments  # If not sorting by comments, sort by score
+    )
     menu.show()
     return 0
 

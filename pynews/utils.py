@@ -100,40 +100,80 @@ def create_list_stories(list_id_stories, number_of_stories, shuffle, max_threads
     return list_stories
 
 
-def format_score(score):
-    """Format score with a visual indicator of popularity."""
-    if score >= 100:
-        return f"⭐ {score} pts ⭐"  # Star for highly-scored stories
-    elif score >= 50:
-        return f"✓ {score} pts"  # Check mark for medium-scored stories
+def sort_stories_by_score(stories, reverse=True):
+    """
+    Sort stories by their score (points).
+    
+    Args:
+        stories: List of story dictionaries
+        reverse: If True, sort in descending order (highest score first)
+        
+    Returns:
+        Sorted list of stories
+    """
+    return sorted(stories, key=lambda x: x.get('score', 0), reverse=reverse)
+
+
+def sort_stories_by_comments(stories, reverse=True):
+    """
+    Sort stories by their comment count.
+    
+    Args:
+        stories: List of story dictionaries
+        reverse: If True, sort in descending order (most comments first)
+        
+    Returns:
+        Sorted list of stories
+    """
+    return sorted(stories, key=lambda x: len(x.get('kids', [])), reverse=reverse)
+
+
+def format_comment_count(count):
+    """Format comment count with visual indicators based on activity level."""
+    if count >= 100:
+        return f"💬 {count}"  # Very active discussion
+    elif count >= 50:
+        return f"💬 {count}"  # Active discussion
+    elif count >= 10:
+        return f"💬 {count}"  # Notable discussion
+    elif count > 0:
+        return f"💬 {count}"  # Some discussion
     else:
-        return f"{score} pts"  # Plain format for lower scores
+        return f"💬 0"  # No discussion yet
 
 
-def create_menu(list_dict_stories, type_new):
+def create_menu(list_dict_stories, type_new, sort_by_score=True):
     """
     Create a menu with the stories to display.
-    For Ask HN stories, we'll include the author information and score.
+    For Ask HN stories, we'll include the author information, score, and comment count.
+    
+    Args:
+        list_dict_stories: List of story dictionaries
+        type_new: Type of stories ('ask', 'top', 'news')
+        sort_by_score: Whether to sort Ask HN stories by score
     """
     title = f"Pynews - {type_new.capitalize()} stories"
+    
+    # For Ask stories, sort by score and add sorting info to title
+    if type_new == "ask" and sort_by_score:
+        list_dict_stories = sort_stories_by_score(list_dict_stories)
+        title = f"Pynews - {type_new.capitalize()} stories (sorted by score)"
+    
     menu = CursesMenu(title, "Select the story and press enter")
     msg = "This story does not have a URL"
-    
-    # Sort the stories by score (highest first) if this is an Ask HN listing
-    if type_new == "ask":
-        list_dict_stories.sort(key=lambda x: x.get("score", 0), reverse=True)
     
     for i, story in enumerate(list_dict_stories):
         # Get the basic story information
         story_title = clean_title(story.get("title", "Untitled"))
         author = story.get("by", "Anonymous")
         points = story.get("score", 0)
+        comment_count = len(story.get('kids', []))
         
-        # Format the display title - For Ask HN stories, add author and score information
+        # Format the display title
         if type_new == "ask":
-            # Format with score first to emphasize it, then author
-            score_display = format_score(points)
-            display_title = f"[{i+1}] [{score_display}] {story_title} [by {author}]"
+            # For Ask HN, format with score, comment count, and author info
+            formatted_comments = format_comment_count(comment_count)
+            display_title = f"[{i+1}] {story_title} [⬆ {points} pts] [{formatted_comments}] [by {author}]"
         else:
             # For other story types, just use the title with index
             display_title = f"[{i+1}] {story_title}"
