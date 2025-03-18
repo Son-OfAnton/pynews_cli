@@ -2,6 +2,7 @@ import random
 import sys
 import datetime
 import re
+import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from webbrowser import open as url_open
 
@@ -377,11 +378,27 @@ def format_time_ago(timestamp):
         return "just now"
 
 
+def truncate_string(text, max_length, ellipsis="..."):
+    """Truncate a string to max_length, adding ellipsis if it was truncated."""
+    if not text or len(text) <= max_length:
+        return text
+    return text[:max_length-len(ellipsis)] + ellipsis
+
+
+def get_terminal_width():
+    """Get the current terminal width, or a reasonable default if it can't be determined."""
+    try:
+        width, _ = shutil.get_terminal_size()
+        # If width seems unreasonably small, use a default instead
+        return width if width > 40 else 80
+    except Exception:
+        return 80
+
+
 def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=False, 
                 keywords=None, highlight_keys=True, author_filter=None, highlight_author_name=True):
     """
     Create a menu with the stories to display.
-    For Ask HN stories, we'll include the author information, score, comment count, and time.
     
     Args:
         list_dict_stories: List of story dictionaries
@@ -424,10 +441,19 @@ def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=Fa
             list_dict_stories = sort_stories_by_comments(list_dict_stories)
             title += " (sorted by comments)"
     
+    # Create the menu
     menu = CursesMenu(title, "Select the story and press enter")
-    msg = "This story does not have a URL"
+
+    # Get terminal width for proper formatting
+    term_width = get_terminal_width()
     
-    for i, story in enumerate(list_dict_stories):
+    # Calculate reasonable title width - allow space for metadata
+    title_width = term_width - 35  # Reserve space for metadata
+    if title_width < 30:  # Minimum reasonable title width
+        title_width = term_width - 20
+    
+    # Process each story
+    for story in list_dict_stories:
         # Get the basic story information
         story_title = clean_title(story.get("title", "Untitled"))
         author = story.get("by", "Anonymous")
@@ -441,28 +467,27 @@ def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=Fa
             if supports_highlight:
                 story_title = highlight_keywords(story_title, keywords, case_sensitive=False)
         
-        # Format the display title - FIXED: removed the duplicate numbering [i+1]
-        if type_new == "ask":
-            # For Ask HN, format with score, comment count, time, and author info
-            formatted_comments = format_comment_count(comment_count)
-            
-            # Highlight author if it matches the filter or if highlighting is requested
-            if highlight_author_name and supports_color() and sys.stdout.isatty():
-                if author_filter:
-                    # Highlight only if it matches the filter
-                    if author.lower() == author_filter.lower():
-                        author = highlight_author(author)
-                else:
-                    # No filter specified, highlight all authors
+        # Highlight author if required
+        if highlight_author_name and supports_color() and sys.stdout.isatty():
+            if author_filter:
+                # Highlight only if it matches the filter
+                if author.lower() == author_filter.lower():
                     author = highlight_author(author)
+            else:
+                # No filter specified, highlight all authors
+                author = highlight_author(author)
+        
+        # Format the display title - FIXED: Use single line format with truncated title
+        if type_new == "ask":
+            # Truncate title if needed to fit in the available width
+            truncated_title = truncate_string(story_title, title_width)
             
-            display_title = (
-                f"{story_title}\n"  # Removed the [i+1] prefix
-                f"    [⬆ {points} pts] [{formatted_comments}] [🕒 {time_ago}] [by {author}]"
-            )
+            # For Ask HN, format everything on one line to prevent highlight bar overflow
+            formatted_comments = format_comment_count(comment_count)
+            display_title = f"{truncated_title} - {points}pts, {comment_count}c, {time_ago}, by {author}"
         else:
-            # For other story types, just use the title without duplicate numbering
-            display_title = f"{story_title}"
+            # For other story types, just use the title with reasonable truncation
+            display_title = truncate_string(story_title, term_width - 5)
         
         # Create the menu item with appropriate URL
         if "url" in story and story["url"]:
