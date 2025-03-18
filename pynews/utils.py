@@ -441,7 +441,7 @@ def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=Fa
             if supports_highlight:
                 story_title = highlight_keywords(story_title, keywords, case_sensitive=False)
         
-        # Format the display title
+        # Format the display title - FIXED: removed the duplicate numbering [i+1]
         if type_new == "ask":
             # For Ask HN, format with score, comment count, time, and author info
             formatted_comments = format_comment_count(comment_count)
@@ -457,12 +457,12 @@ def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=Fa
                     author = highlight_author(author)
             
             display_title = (
-                f"[{i+1}] {story_title}\n"
+                f"{story_title}\n"  # Removed the [i+1] prefix
                 f"    [⬆ {points} pts] [{formatted_comments}] [🕒 {time_ago}] [by {author}]"
             )
         else:
-            # For other story types, just use the title with index
-            display_title = f"[{i+1}] {story_title}"
+            # For other story types, just use the title without duplicate numbering
+            display_title = f"{story_title}"
         
         # Create the menu item with appropriate URL
         if "url" in story and story["url"]:

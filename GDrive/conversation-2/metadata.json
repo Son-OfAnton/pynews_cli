@@ -84,6 +84,28 @@
 			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
 			"issue_source": "pynews/comments.py",
 			"comment": "Model A The author name is being seen instead gibberish characters are seen."
+		},
+    {
+      "prompt": "When I run the command `python3 -m pynews -a` redundant numbered bullet points are seen one with a period and the other enclosed in a square bracket.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
+			"issue_source": "pynews/comments.py",
+			"comment": "Model A The author name is being seen instead gibberish characters are seen."
+		},
+    {
+      "prompt": "The ASK stories fetched after running the command `python3 -m pynews -a` have a narrow default width. Due to this the highlight bar overflows to the row below when navigating with the arrow keys. Please fix this issue.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
+			"issue_source": "pynews/comments.py",
+			"comment": "Model A The author name is being seen instead gibberish characters are seen."
 		}
 	]
 }
