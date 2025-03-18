@@ -5,11 +5,12 @@ import textwrap
 import sys
 import os
 import html
+import datetime
 from webbrowser import open as url_open
 
 from .colors import Colors, ColorScheme, colorize, supports_color
 from .getch import getch
-from .utils import get_story, format_comment_count
+from .utils import get_story, format_comment_count, format_time_ago
 
 USE_COLORS = supports_color()
 
@@ -19,7 +20,6 @@ def clear_screen():
 
 def format_timestamp(unix_time):
     """Convert Unix timestamp to a human-readable format."""
-    import datetime
     try:
         dt = datetime.datetime.fromtimestamp(unix_time)
         # Format: "Mar 17, 2023 at 10:30 AM"
@@ -29,6 +29,25 @@ def format_timestamp(unix_time):
         return timestamp
     except (TypeError, ValueError):
         return colorize("Unknown time", ColorScheme.TIME) if USE_COLORS else "Unknown time"
+
+def format_time_detailed(unix_time):
+    """Format time in a detailed way with both absolute and relative time."""
+    if not unix_time:
+        return "Unknown time"
+    
+    # Get absolute time (formatted date)
+    dt = datetime.datetime.fromtimestamp(unix_time)
+    abs_time = dt.strftime("%b %d, %Y at %I:%M %p")
+    
+    # Get relative time (time ago)
+    rel_time = format_time_ago(unix_time)
+    
+    # Combine them
+    time_str = f"{abs_time} ({rel_time})"
+    
+    if USE_COLORS:
+        return colorize(time_str, ColorScheme.TIME)
+    return time_str
 
 def clean_text(text):
     """Clean HTML from text and convert to plain text."""
@@ -105,7 +124,7 @@ def format_comment_count_detailed(count):
 def display_ask_story_details(story_id):
     """
     Display detailed information about an Ask HN story, 
-    highlighting the author information, score, and comment count.
+    highlighting the author information, score, comment count, and submission time.
     """
     # Fetch the story details
     story = get_story(story_id)
@@ -134,19 +153,23 @@ def display_ask_story_details(story_id):
         print("\n" + "=" * 80)
         print(title)
     
-    # Display score prominently with visual indicators
-    formatted_score = format_score(points)
-    print(f"\n{formatted_score}")
+    # Display time prominently
+    time_display = f"🕒 Posted: {format_time_detailed(created_time)}"
+    print(f"\n{time_display}")
     
-    # Display comment count prominently
+    # Display score with visual indicators
+    formatted_score = format_score(points)
+    print(formatted_score)
+    
+    # Display comment count
     formatted_comments = format_comment_count_detailed(comment_count)
     print(formatted_comments)
     
     # Display author information
     if USE_COLORS:
-        author_line = f"Posted by: {colorize(author, ColorScheme.AUTHOR)} on {format_timestamp(created_time)}"
+        author_line = f"By: {colorize(author, ColorScheme.AUTHOR)}"
     else:
-        author_line = f"Posted by: {author} on {format_timestamp(created_time)}"
+        author_line = f"By: {author}"
         
     print(f"\n{author_line}")
     
@@ -202,31 +225,36 @@ def display_ask_story_details(story_id):
     
     return {'action': 'return_to_menu'}
 
-def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False):
+def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False, sort_by_time=False):
     """
-    Display a list of Ask HN stories sorted by score or comment count.
+    Display a list of Ask HN stories sorted by score, comment count, or time.
     
     Args:
         limit: Maximum number of stories to display
         min_score: Minimum score threshold for stories to include
-        sort_by_comments: If True, sort by comment count instead of score
+        sort_by_comments: If True, sort by comment count
+        sort_by_time: If True, sort by submission time (newest first)
     """
-    from .utils import get_stories, get_story, sort_stories_by_score, sort_stories_by_comments
+    from .utils import get_stories, get_story, sort_stories_by_score, sort_stories_by_comments, sort_stories_by_time
     from .loading import LoadingIndicator
     
     clear_screen()
     
-    # Display header
-    if USE_COLORS:
-        if sort_by_comments:
-            print(colorize("\n=== Most Discussed Ask HN Stories ===", ColorScheme.TITLE))
-        else:
-            print(colorize("\n=== Top Scored Ask HN Stories ===", ColorScheme.TITLE))
+    # Determine sort mode and display header
+    if sort_by_time:
+        sort_type = "time"
+        header = "Most Recent Ask HN Stories"
+    elif sort_by_comments:
+        sort_type = "comments"
+        header = "Most Discussed Ask HN Stories"
     else:
-        if sort_by_comments:
-            print("\n=== Most Discussed Ask HN Stories ===")
-        else:
-            print("\n=== Top Scored Ask HN Stories ===")
+        sort_type = "score"
+        header = "Top Scored Ask HN Stories"
+        
+    if USE_COLORS:
+        print(colorize(f"\n=== {header} ===", ColorScheme.TITLE))
+    else:
+        print(f"\n=== {header} ===")
     
     # Fetch Ask story IDs
     loader = LoadingIndicator(message="Fetching Ask HN stories...")
@@ -255,13 +283,13 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
     finally:
         loader.stop()
     
-    # Sort by score or comments and limit to requested number
-    if sort_by_comments:
+    # Sort based on the selected criteria and limit to requested number
+    if sort_by_time:
+        sorted_stories = sort_stories_by_time(stories)[:limit]
+    elif sort_by_comments:
         sorted_stories = sort_stories_by_comments(stories)[:limit]
-        sort_type = "comments"
     else:
         sorted_stories = sort_stories_by_score(stories)[:limit]
-        sort_type = "score"
     
     if not sorted_stories:
         if USE_COLORS:
@@ -276,16 +304,17 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
         author = story.get('by', 'Anonymous')
         score = story.get('score', 0)
         comment_count = len(story.get('kids', []))
+        time_ago = format_time_ago(story.get('time', 0))
         
         if USE_COLORS:
             print(f"\n{colorize(f'{i+1}. {title}', ColorScheme.HEADER)}")
             print(f"   {format_score(score)} | {format_comment_count_detailed(comment_count)}")
-            print(f"   By: {colorize(author, ColorScheme.AUTHOR)}")
+            print(f"   🕒 {colorize(time_ago, ColorScheme.TIME)} | By: {colorize(author, ColorScheme.AUTHOR)}")
             print(f"   Link: {colorize(f'https://news.ycombinator.com/item?id={story.get('id')}', ColorScheme.URL)}")
         else:
             print(f"\n{i+1}. {title}")
             print(f"   {format_score(score)} | {format_comment_count_detailed(comment_count)}")
-            print(f"   By: {author}")
+            print(f"   🕒 {time_ago} | By: {author}")
             print(f"   Link: https://news.ycombinator.com/item?id={story.get('id')}")
     
     # Prompt for user input
@@ -297,7 +326,9 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
         print("Options:")
         
     print("[number] View details for story (enter 1-10)")
-    print("[s] Toggle sort order (score/comments)")
+    print("[s] Toggle sort by score")
+    print("[c] Toggle sort by comments")
+    print("[t] Toggle sort by time")
     print("[q] Return to menu")
     
     # Handle user input
@@ -306,8 +337,14 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
         if key == 'q':
             return {'action': 'return_to_menu'}
         elif key == 's':
-            # Toggle sort order
-            return {'action': 'toggle_sort', 'sort_by_comments': not sort_by_comments}
+            # Switch to score sorting
+            return {'action': 'change_sort', 'sort_type': 'score'}
+        elif key == 'c':
+            # Switch to comment sorting
+            return {'action': 'change_sort', 'sort_type': 'comments'}
+        elif key == 't':
+            # Switch to time sorting
+            return {'action': 'change_sort', 'sort_type': 'time'}
         elif key.isdigit():
             idx = int(key) - 1
             if 0 <= idx < len(sorted_stories):

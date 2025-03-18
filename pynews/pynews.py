@@ -21,17 +21,31 @@ def handle_ask_story(story_id, page_size=10, width=80):
     
     # Return to main menu otherwise
 
-def handle_top_ask_stories(limit=10, min_score=0, sort_by_comments=False, page_size=10, width=80):
-    """Handle the display of top Ask HN stories (by score or comments)."""
+def handle_top_ask_stories(limit=10, min_score=0, sort_by_comments=False, sort_by_time=False, page_size=10, width=80):
+    """Handle the display of top Ask HN stories (by score, comments, or time)."""
     while True:
-        result = display_top_scored_ask_stories(limit, min_score, sort_by_comments)
+        result = display_top_scored_ask_stories(
+            limit=limit, 
+            min_score=min_score, 
+            sort_by_comments=sort_by_comments, 
+            sort_by_time=sort_by_time
+        )
         
         if not result or result.get('action') == 'return_to_menu':
             break
             
-        if result.get('action') == 'toggle_sort':
-            # Toggle between sorting by score and sorting by comments
-            sort_by_comments = result.get('sort_by_comments', False)
+        if result.get('action') == 'change_sort':
+            # Change the sorting mode
+            sort_type = result.get('sort_type', 'score')
+            if sort_type == 'comments':
+                sort_by_comments = True
+                sort_by_time = False
+            elif sort_type == 'time':
+                sort_by_comments = False
+                sort_by_time = True
+            else:  # score
+                sort_by_comments = False
+                sort_by_time = False
             continue
         
         if result.get('action') == 'view_story':
@@ -78,6 +92,7 @@ def main():
                 limit=options.ask_top,
                 min_score=options.min_score,
                 sort_by_comments=options.sort_by_comments,
+                sort_by_time=options.sort_by_time,
                 page_size=options.page_size,
                 width=options.width
             )
@@ -93,7 +108,7 @@ def main():
     elif options.ask_stories:
         param = options.ask_stories, "ask"
     else:
-        print("Please specify either --top-stories, --news-stories, --ask-stories, --ask-top, or --comments")
+        print("Please specify either --top-stories, --news-stories, --ask-stories, --ask-top, --ask-discussed, --ask-recent, or --comments")
         return 1
 
     list_data = None
@@ -124,13 +139,15 @@ def main():
         list_data, param[0], options.shuffle, max_threads
     )
 
-    # For Ask stories, we can sort by score (default) or by comment count
+    # For Ask stories, we can sort by score (default), comments, or time
     sort_by_comments = param[1] == "ask" and options.sort_by_comments
+    sort_by_time = param[1] == "ask" and options.sort_by_time
     
     menu = create_menu(
         list_dict_stories, 
         param[1], 
-        sort_by_score=not sort_by_comments  # If not sorting by comments, sort by score
+        sort_by_score=not (sort_by_comments or sort_by_time),
+        sort_by_time=sort_by_time
     )
     menu.show()
     return 0

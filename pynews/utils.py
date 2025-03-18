@@ -1,5 +1,6 @@
 import random
 import sys
+import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from webbrowser import open as url_open
 
@@ -128,6 +129,20 @@ def sort_stories_by_comments(stories, reverse=True):
     return sorted(stories, key=lambda x: len(x.get('kids', [])), reverse=reverse)
 
 
+def sort_stories_by_time(stories, reverse=True):
+    """
+    Sort stories by their submission time.
+    
+    Args:
+        stories: List of story dictionaries
+        reverse: If True, sort in descending order (newest first)
+        
+    Returns:
+        Sorted list of stories
+    """
+    return sorted(stories, key=lambda x: x.get('time', 0), reverse=reverse)
+
+
 def format_comment_count(count):
     """Format comment count with visual indicators based on activity level."""
     if count >= 100:
@@ -142,22 +157,69 @@ def format_comment_count(count):
         return f"💬 0"  # No discussion yet
 
 
-def create_menu(list_dict_stories, type_new, sort_by_score=True):
+def format_time_ago(timestamp):
+    """
+    Format a Unix timestamp as a human-readable 'time ago' string.
+    
+    Args:
+        timestamp: Unix timestamp (seconds since epoch)
+        
+    Returns:
+        String like "5 min ago" or "3 days ago"
+    """
+    if not timestamp:
+        return "Unknown time"
+        
+    # Convert to datetime
+    dt = datetime.datetime.fromtimestamp(timestamp)
+    now = datetime.datetime.now()
+    
+    # Calculate the time difference
+    diff = now - dt
+    
+    # Format the time ago string based on the difference
+    if diff.days > 365:
+        years = diff.days // 365
+        return f"{years}y ago"
+    elif diff.days > 30:
+        months = diff.days // 30
+        return f"{months}mo ago"
+    elif diff.days > 0:
+        return f"{diff.days}d ago"
+    elif diff.seconds > 3600:
+        hours = diff.seconds // 3600
+        return f"{hours}h ago"
+    elif diff.seconds > 60:
+        minutes = diff.seconds // 60
+        return f"{minutes}m ago"
+    else:
+        return "just now"
+
+
+def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=False):
     """
     Create a menu with the stories to display.
-    For Ask HN stories, we'll include the author information, score, and comment count.
+    For Ask HN stories, we'll include the author information, score, comment count, and time.
     
     Args:
         list_dict_stories: List of story dictionaries
         type_new: Type of stories ('ask', 'top', 'news')
         sort_by_score: Whether to sort Ask HN stories by score
+        sort_by_time: Whether to sort Ask HN stories by submission time
     """
     title = f"Pynews - {type_new.capitalize()} stories"
     
-    # For Ask stories, sort by score and add sorting info to title
-    if type_new == "ask" and sort_by_score:
-        list_dict_stories = sort_stories_by_score(list_dict_stories)
-        title = f"Pynews - {type_new.capitalize()} stories (sorted by score)"
+    # For Ask stories, sort based on the specified criteria
+    if type_new == "ask":
+        if sort_by_time:
+            list_dict_stories = sort_stories_by_time(list_dict_stories)
+            title = f"Pynews - {type_new.capitalize()} stories (sorted by time)"
+        elif sort_by_score:
+            list_dict_stories = sort_stories_by_score(list_dict_stories)
+            title = f"Pynews - {type_new.capitalize()} stories (sorted by score)"
+        else:  # Sort by comments
+            list_dict_stories = sort_stories_by_comments(list_dict_stories)
+            title = f"Pynews - {type_new.capitalize()} stories (sorted by comments)"
     
     menu = CursesMenu(title, "Select the story and press enter")
     msg = "This story does not have a URL"
@@ -168,12 +230,16 @@ def create_menu(list_dict_stories, type_new, sort_by_score=True):
         author = story.get("by", "Anonymous")
         points = story.get("score", 0)
         comment_count = len(story.get('kids', []))
+        time_ago = format_time_ago(story.get('time', 0))
         
         # Format the display title
         if type_new == "ask":
-            # For Ask HN, format with score, comment count, and author info
+            # For Ask HN, format with score, comment count, time, and author info
             formatted_comments = format_comment_count(comment_count)
-            display_title = f"[{i+1}] {story_title} [⬆ {points} pts] [{formatted_comments}] [by {author}]"
+            display_title = (
+                f"[{i+1}] {story_title}\n"
+                f"    [⬆ {points} pts] [{formatted_comments}] [🕒 {time_ago}] [by {author}]"
+            )
         else:
             # For other story types, just use the title with index
             display_title = f"[{i+1}] {story_title}"

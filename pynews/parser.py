@@ -17,6 +17,7 @@ def get_parser_options() -> argparse.Namespace:
                           [-d/--ask-details story_id]
                           [--ask-top number_of_stories]
                           [--ask-discussed number_of_stories]
+                          [--ask-recent number_of_stories]
 
             If the number of stories is not supplied, will be showed 200 from the
             500 stories.
@@ -36,6 +37,10 @@ def get_parser_options() -> argparse.Namespace:
                 $ pynews -a 10 # or
                 $ pynews --ask-stories 10
                 This will show the 10 latest Ask HN stories with scores and comment counts.
+            
+            - Get Ask HN Stories sorted by submission time:
+                $ pynews -a 10 --sort-by-time
+                This will show the 10 Ask HN stories sorted by submission time.
                 
             - Get Top-Scored Ask HN Stories:
                 $ pynews --ask-top 10
@@ -44,6 +49,10 @@ def get_parser_options() -> argparse.Namespace:
             - Get Most-Discussed Ask HN Stories:
                 $ pynews --ask-discussed 10
                 This will show the 10 Ask HN stories with the most comments.
+                
+            - Get Most Recent Ask HN Stories:
+                $ pynews --ask-recent 10
+                This will show the 10 most recent Ask HN stories.
                 
             - View Comments for a Story:
                 $ pynews -c 12345 # or
@@ -105,6 +114,14 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N most commented Ask HN stories",
     )
+    
+    parser.add_argument(
+        "--ask-recent",
+        nargs="?",
+        const=10,
+        type=int,
+        help="Get the N most recent Ask HN stories",
+    )
 
     parser.add_argument(
         "--min-score",
@@ -121,9 +138,22 @@ def get_parser_options() -> argparse.Namespace:
     )
     
     parser.add_argument(
+        "--max-age",
+        type=int,
+        default=0,
+        help="Maximum age in hours for Ask HN stories (used with --ask-recent)",
+    )
+    
+    parser.add_argument(
         "--sort-by-comments",
         action="store_true",
         help="Sort Ask HN stories by comment count instead of score",
+    )
+    
+    parser.add_argument(
+        "--sort-by-time",
+        action="store_true",
+        help="Sort Ask HN stories by submission time (newest first)",
     )
 
     parser.add_argument(
@@ -187,5 +217,10 @@ def get_parser_options() -> argparse.Namespace:
     if options.ask_discussed:
         options.sort_by_comments = True
         options.ask_top = options.ask_discussed
+    
+    # If --ask-recent is used, set sort_by_time to True
+    if options.ask_recent:
+        options.sort_by_time = True
+        options.ask_top = options.ask_recent
         
     return options
