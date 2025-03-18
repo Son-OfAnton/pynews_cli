@@ -10,6 +10,7 @@ from cursesmenu.items import FunctionItem
 
 from .constants import URLS
 from .loading import with_loading, LoadingIndicator
+from .colors import Colors, colorize, supports_color
 
 
 def clean_title(title):
@@ -100,14 +101,42 @@ def create_list_stories(list_id_stories, number_of_stories, shuffle, max_threads
 
 
 def create_menu(list_dict_stories, type_new):
-    title = "Pynews - {} stories".format(type_new.capitalize())
-    menu = CursesMenu(title, "Select the new and press enter")
-    msg = "This new does not have an URL"
-    for story in list_dict_stories:
-        title = clean_title(story["title"])
-        if "url" in story:
-            item = FunctionItem(title, url_open, args=[story["url"]])
+    """
+    Create a menu with the stories to display.
+    For Ask HN stories, we'll include the author information.
+    """
+    title = f"Pynews - {type_new.capitalize()} stories"
+    menu = CursesMenu(title, "Select the story and press enter")
+    msg = "This story does not have a URL"
+    
+    for i, story in enumerate(list_dict_stories):
+        # Get the basic story information
+        story_title = clean_title(story.get("title", "Untitled"))
+        author = story.get("by", "Anonymous")
+        points = story.get("score", 0)
+        
+        # Format the display title - For Ask HN stories, add author information
+        if type_new == "ask":
+            # For Ask HN, format with author info
+            display_title = f"[{i+1}] {story_title} [by {author}, {points} points]"
         else:
-            item = FunctionItem(title, lambda x: print(x), args=[msg])
+            # For other story types, just use the title with index
+            display_title = f"[{i+1}] {story_title}"
+        
+        # Create the menu item with appropriate URL
+        if "url" in story and story["url"]:
+            item = FunctionItem(display_title, url_open, args=[story["url"]])
+        else:
+            # For self-posts that don't have a URL, use the HN link
+            hn_url = f"https://news.ycombinator.com/item?id={story.get('id')}"
+            item = FunctionItem(display_title, url_open, args=[hn_url])
+        
         menu.append_item(item)
+    
     return menu
+
+
+def show_author_profile(username):
+    """Open the Hacker News user profile in a browser."""
+    profile_url = f"https://news.ycombinator.com/user?id={username}"
+    url_open(profile_url)

@@ -14,6 +14,7 @@ def get_parser_options() -> argparse.Namespace:
                           [-n/--news-stories number_of_stories]
                           [-a/--ask-stories number_of_stories]
                           [-c/--comments story_id]
+                          [-d/--ask-details story_id]
 
             If the number of stories is not supplied, will be showed 200 from the
             500 stories.
@@ -38,6 +39,11 @@ def get_parser_options() -> argparse.Namespace:
                 $ pynews -c 12345 # or
                 $ pynews --comments 12345
                 This will show comments for story with ID 12345.
+                
+            - View Ask HN Story Details (including author):
+                $ pynews -d 12345 # or
+                $ pynews --ask-details 12345
+                This will show details for an Ask HN story, highlighting the author.
                 
             - Control Comment Pagination:
                 $ pynews -c 12345 -p 15 --page 2
@@ -97,6 +103,13 @@ def get_parser_options() -> argparse.Namespace:
         "--comments",
         type=int,
         help="View comments for a story with the given ID",
+    )
+    
+    parser.add_argument(
+        "-d",
+        "--ask-details",
+        type=int,
+        help="View details of an Ask HN story with the given ID, highlighting the author",
     )
     
     parser.add_argument(

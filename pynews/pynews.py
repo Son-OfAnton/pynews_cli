@@ -9,7 +9,17 @@ from .constants import DEFAULT_THREADS_NUMBER
 from .parser import get_parser_options
 from .utils import create_list_stories, create_menu, get_stories
 from .comments import display_comments_for_story
+from .ask_view import display_ask_story_details
 
+def handle_ask_story(story_id, page_size=10, width=80):
+    """Handle detailed view of an Ask HN story with option to view comments."""
+    result = display_ask_story_details(story_id)
+    
+    # Check if user wants to view comments
+    if result and result.get('action') == 'view_comments':
+        display_comments_for_story(story_id, page_size=page_size, width=width)
+    
+    # Return to main menu otherwise
 
 def main():
     """Main entry point for the script."""
@@ -23,6 +33,18 @@ def main():
                 options.comments, 
                 page_size=options.page_size, 
                 page_num=options.page, 
+                width=options.width
+            )
+        except KeyboardInterrupt:
+            print("\nOperation cancelled by user.")
+        return 0
+    
+    # Handle Ask HN story detailed view if requested
+    if options.ask_details:
+        try:
+            handle_ask_story(
+                options.ask_details,
+                page_size=options.page_size,
                 width=options.width
             )
         except KeyboardInterrupt:
