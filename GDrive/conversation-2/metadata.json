@@ -73,6 +73,17 @@
 			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
 			"issue_source": "pynews/comments.py",
 			"comment": "Model A The author name is being seen instead gibberish characters are seen."
+		},
+    {
+      "prompt": "Add a feature to search for an ASK story posted by a particular user.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
+			"issue_source": "pynews/comments.py",
+			"comment": "Model A The author name is being seen instead gibberish characters are seen."
 		}
 	]
 }

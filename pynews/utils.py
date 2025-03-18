@@ -189,6 +189,42 @@ def filter_stories_by_keywords(stories, keywords, match_all=False, case_sensitiv
     return filtered_stories
 
 
+def filter_stories_by_author(stories, author, case_sensitive=False):
+    """
+    Filter stories by their author (username).
+    
+    Args:
+        stories: List of story dictionaries
+        author: Username to filter by
+        case_sensitive: Whether the username comparison should be case-sensitive
+    
+    Returns:
+        List of filtered stories by the specified author
+    """
+    if not author:
+        return stories
+    
+    filtered_stories = []
+    
+    # Prepare the author name for comparison
+    if not case_sensitive:
+        author = author.lower()
+    
+    for story in stories:
+        # Get the author of the story
+        story_author = story.get('by', '')
+        
+        # For case-insensitive search, convert to lowercase
+        if not case_sensitive and story_author:
+            story_author = story_author.lower()
+        
+        # Check if the author matches
+        if story_author == author:
+            filtered_stories.append(story)
+    
+    return filtered_stories
+
+
 def highlight_keywords(text, keywords, case_sensitive=False):
     """
     Highlight keywords in text by wrapping them in special markers.
@@ -222,6 +258,28 @@ def highlight_keywords(text, keywords, case_sensitive=False):
         highlighted = pattern.sub(f"\033[1;33m{keyword}\033[0m", highlighted)
     
     return highlighted
+
+
+def highlight_author(text, author=None):
+    """
+    Highlight author name with a special format.
+    
+    Args:
+        text: The author text to highlight
+        author: The author name to check against (if None, always highlight)
+    
+    Returns:
+        Author text with highlighting
+    """
+    if not text:
+        return text
+    
+    # If author is specified, only highlight if it matches
+    if author is not None and text.lower() != author.lower():
+        return text
+    
+    # Use a distinct color for author highlighting
+    return f"\033[1;36m{text}\033[0m"  # Cyan, bold
 
 
 def sort_stories_by_score(stories, reverse=True):
@@ -320,7 +378,7 @@ def format_time_ago(timestamp):
 
 
 def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=False, 
-                keywords=None, highlight_keys=True):
+                keywords=None, highlight_keys=True, author_filter=None, highlight_author_name=True):
     """
     Create a menu with the stories to display.
     For Ask HN stories, we'll include the author information, score, comment count, and time.
@@ -332,15 +390,27 @@ def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=Fa
         sort_by_time: Whether to sort Ask HN stories by submission time
         keywords: List of keywords to highlight in titles (if None, no highlighting)
         highlight_keys: Whether to highlight keywords in the titles
+        author_filter: Username to filter stories by (only show stories from this author)
+        highlight_author_name: Whether to highlight the author name in the display
     """
     title = f"Pynews - {type_new.capitalize()} stories"
     
+    # Apply author filtering if specified
+    if author_filter and type_new == "ask":
+        original_count = len(list_dict_stories)
+        list_dict_stories = filter_stories_by_author(list_dict_stories, author_filter, case_sensitive=False)
+        filtered_count = len(list_dict_stories)
+        title = f"Pynews - {type_new.capitalize()} stories by '{author_filter}' ({filtered_count}/{original_count})"
+    
     # Apply keyword filtering if keywords are provided
-    if keywords and type_new == "ask":
+    if keywords and any(keywords) and type_new == "ask":
         original_count = len(list_dict_stories)
         list_dict_stories = filter_stories_by_keywords(list_dict_stories, keywords)
         filtered_count = len(list_dict_stories)
-        title = f"Pynews - {type_new.capitalize()} stories (filtered: {filtered_count}/{original_count})"
+        if author_filter:
+            title = f"Pynews - {type_new.capitalize()} stories by '{author_filter}' with keywords ({filtered_count}/{original_count})"
+        else:
+            title = f"Pynews - {type_new.capitalize()} stories (filtered: {filtered_count}/{original_count})"
     
     # For Ask stories, sort based on the specified criteria
     if type_new == "ask":
@@ -375,6 +445,17 @@ def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=Fa
         if type_new == "ask":
             # For Ask HN, format with score, comment count, time, and author info
             formatted_comments = format_comment_count(comment_count)
+            
+            # Highlight author if it matches the filter or if highlighting is requested
+            if highlight_author_name and supports_color() and sys.stdout.isatty():
+                if author_filter:
+                    # Highlight only if it matches the filter
+                    if author.lower() == author_filter.lower():
+                        author = highlight_author(author)
+                else:
+                    # No filter specified, highlight all authors
+                    author = highlight_author(author)
+            
             display_title = (
                 f"[{i+1}] {story_title}\n"
                 f"    [⬆ {points} pts] [{formatted_comments}] [🕒 {time_ago}] [by {author}]"
@@ -400,3 +481,36 @@ def show_author_profile(username):
     """Open the Hacker News user profile in a browser."""
     profile_url = f"https://news.ycombinator.com/user?id={username}"
     url_open(profile_url)
+
+
+def get_user_stories(username, story_type='submitted'):
+    """
+    Fetch a list of stories submitted by a specific user.
+    
+    Args:
+        username: HackerNews username to fetch stories for
+        story_type: Type of stories ('submitted', 'favorites', 'comments')
+        
+    Returns:
+        List of story IDs submitted by the user
+    """
+    if not username:
+        return []
+    
+    # Fetch the user profile
+    user_url = f"https://hacker-news.firebaseio.com/v0/user/{username}.json"
+    try:
+        response = req.get(user_url)
+        if response.status_code != 200:
+            return []
+        
+        user_data = response.json()
+        if not user_data or not isinstance(user_data, dict):
+            return []
+        
+        # Get the list of submitted items
+        submitted = user_data.get(story_type, [])
+        return submitted
+    except Exception as e:
+        print(f"Error fetching user data: {e}")
+        return []
