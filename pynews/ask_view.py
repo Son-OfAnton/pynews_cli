@@ -6,11 +6,15 @@ import sys
 import os
 import html
 import datetime
+import re
 from webbrowser import open as url_open
 
 from .colors import Colors, ColorScheme, colorize, supports_color
 from .getch import getch
-from .utils import get_story, format_comment_count, format_time_ago
+from .utils import (
+    get_story, format_comment_count, format_time_ago, 
+    filter_stories_by_keywords, highlight_keywords
+)
 
 USE_COLORS = supports_color()
 
@@ -121,10 +125,15 @@ def format_comment_count_detailed(count):
         else:
             return "No comments yet"
 
-def display_ask_story_details(story_id):
+def display_ask_story_details(story_id, keywords=None, case_sensitive=False):
     """
     Display detailed information about an Ask HN story, 
     highlighting the author information, score, comment count, and submission time.
+    
+    Args:
+        story_id: ID of the story to display
+        keywords: List of keywords to highlight in the content
+        case_sensitive: Whether keyword highlighting should be case-sensitive
     """
     # Fetch the story details
     story = get_story(story_id)
@@ -145,6 +154,10 @@ def display_ask_story_details(story_id):
     comment_count = len(story.get('kids', []))
     text = story.get('text', '')
     
+    # Highlight keywords in title and text if provided
+    if keywords and any(keywords) and USE_COLORS:
+        title = highlight_keywords(title, keywords, case_sensitive=case_sensitive)
+        
     # Display the header with title
     if USE_COLORS:
         print(colorize("\n" + "=" * 80, ColorScheme.HEADER))
@@ -175,16 +188,24 @@ def display_ask_story_details(story_id):
     
     # Display the story content if available
     if text:
+        cleaned_text = clean_text(text)
+        
+        # Highlight keywords in the content if provided
+        if keywords and any(keywords) and USE_COLORS:
+            cleaned_text = highlight_keywords(cleaned_text, keywords, case_sensitive=case_sensitive)
+            
         if USE_COLORS:
             print(colorize("\nContent:", ColorScheme.SUBHEADER))
             # Wrap and colorize text content
             wrapper = textwrap.TextWrapper(width=80, initial_indent='  ', subsequent_indent='  ')
-            wrapped_text = wrapper.fill(clean_text(text))
-            print(colorize(wrapped_text, ColorScheme.COMMENT_TEXT))
+            wrapped_text = wrapper.fill(cleaned_text)
+            
+            # Print with highlighting (already applied above)
+            print(wrapped_text)
         else:
             print("\nContent:")
             wrapper = textwrap.TextWrapper(width=80, initial_indent='  ', subsequent_indent='  ')
-            print(wrapper.fill(clean_text(text)))
+            print(wrapper.fill(cleaned_text))
     
     # Show options
     if USE_COLORS:
@@ -225,7 +246,8 @@ def display_ask_story_details(story_id):
     
     return {'action': 'return_to_menu'}
 
-def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False, sort_by_time=False):
+def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False, sort_by_time=False,
+                                 keywords=None, match_all=False, case_sensitive=False):
     """
     Display a list of Ask HN stories sorted by score, comment count, or time.
     
@@ -234,6 +256,9 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
         min_score: Minimum score threshold for stories to include
         sort_by_comments: If True, sort by comment count
         sort_by_time: If True, sort by submission time (newest first)
+        keywords: List of keywords to search and highlight
+        match_all: If True, all keywords must match; if False, any keyword can match
+        case_sensitive: Whether the search should be case-sensitive
     """
     from .utils import get_stories, get_story, sort_stories_by_score, sort_stories_by_comments, sort_stories_by_time
     from .loading import LoadingIndicator
@@ -250,6 +275,12 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
     else:
         sort_type = "score"
         header = "Top Scored Ask HN Stories"
+    
+    # Add keyword search info to the header
+    if keywords and any(keywords):
+        keyword_display = ', '.join(f'"{k}"' for k in keywords)
+        match_type = "ALL" if match_all else "ANY"
+        header += f" - Filtering for {match_type} of: {keyword_display}"
         
     if USE_COLORS:
         print(colorize(f"\n=== {header} ===", ColorScheme.TITLE))
@@ -283,6 +314,18 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
     finally:
         loader.stop()
     
+    # Apply keyword filtering if keywords are provided
+    if keywords and any(keywords):
+        original_count = len(stories)
+        stories = filter_stories_by_keywords(stories, keywords, match_all, case_sensitive)
+        filtered_count = len(stories)
+        
+        if USE_COLORS:
+            filter_info = colorize(f"\nFiltered: {filtered_count}/{original_count} stories match your keywords", ColorScheme.INFO)
+        else:
+            filter_info = f"\nFiltered: {filtered_count}/{original_count} stories match your keywords"
+        print(filter_info)
+    
     # Sort based on the selected criteria and limit to requested number
     if sort_by_time:
         sorted_stories = sort_stories_by_time(stories)[:limit]
@@ -292,10 +335,16 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
         sorted_stories = sort_stories_by_score(stories)[:limit]
     
     if not sorted_stories:
-        if USE_COLORS:
-            print(colorize(f"\nNo Ask HN stories found with score >= {min_score}.", ColorScheme.ERROR))
+        if keywords and any(keywords):
+            if USE_COLORS:
+                print(colorize(f"\nNo stories matched your search criteria.", ColorScheme.ERROR))
+            else:
+                print(f"\nNo stories matched your search criteria.")
         else:
-            print(f"\nNo Ask HN stories found with score >= {min_score}.")
+            if USE_COLORS:
+                print(colorize(f"\nNo Ask HN stories found with score >= {min_score}.", ColorScheme.ERROR))
+            else:
+                print(f"\nNo Ask HN stories found with score >= {min_score}.")
         return
     
     # Display the stories
@@ -305,6 +354,10 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
         score = story.get('score', 0)
         comment_count = len(story.get('kids', []))
         time_ago = format_time_ago(story.get('time', 0))
+        
+        # Highlight keywords in the title if provided
+        if keywords and any(keywords) and USE_COLORS:
+            title = highlight_keywords(title, keywords, case_sensitive=case_sensitive)
         
         if USE_COLORS:
             print(f"\n{colorize(f'{i+1}. {title}', ColorScheme.HEADER)}")

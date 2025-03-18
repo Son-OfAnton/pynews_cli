@@ -7,7 +7,7 @@ import requests as req
 
 from .constants import DEFAULT_THREADS_NUMBER
 from .parser import get_parser_options
-from .utils import create_list_stories, create_menu, get_stories
+from .utils import create_list_stories, create_menu, get_stories, filter_stories_by_keywords
 from .comments import display_comments_for_story
 from .ask_view import display_ask_story_details, display_top_scored_ask_stories
 
@@ -21,14 +21,19 @@ def handle_ask_story(story_id, page_size=10, width=80):
     
     # Return to main menu otherwise
 
-def handle_top_ask_stories(limit=10, min_score=0, sort_by_comments=False, sort_by_time=False, page_size=10, width=80):
-    """Handle the display of top Ask HN stories (by score, comments, or time)."""
+def handle_top_ask_stories(limit=10, min_score=0, sort_by_comments=False, sort_by_time=False, 
+                           keywords=None, match_all=False, case_sensitive=False,
+                           page_size=10, width=80):
+    """Handle the display of top Ask HN stories (by score, comments, or time) with keyword filtering."""
     while True:
         result = display_top_scored_ask_stories(
             limit=limit, 
             min_score=min_score, 
             sort_by_comments=sort_by_comments, 
-            sort_by_time=sort_by_time
+            sort_by_time=sort_by_time,
+            keywords=keywords,
+            match_all=match_all,
+            case_sensitive=case_sensitive
         )
         
         if not result or result.get('action') == 'return_to_menu':
@@ -93,6 +98,9 @@ def main():
                 min_score=options.min_score,
                 sort_by_comments=options.sort_by_comments,
                 sort_by_time=options.sort_by_time,
+                keywords=options.keyword,
+                match_all=options.match_all,
+                case_sensitive=options.case_sensitive,
                 page_size=options.page_size,
                 width=options.width
             )
@@ -108,7 +116,7 @@ def main():
     elif options.ask_stories:
         param = options.ask_stories, "ask"
     else:
-        print("Please specify either --top-stories, --news-stories, --ask-stories, --ask-top, --ask-discussed, --ask-recent, or --comments")
+        print("Please specify either --top-stories, --news-stories, --ask-stories, --ask-top, --ask-discussed, --ask-recent, --ask-search, or --comments")
         return 1
 
     list_data = None
@@ -138,16 +146,19 @@ def main():
     list_dict_stories = create_list_stories(
         list_data, param[0], options.shuffle, max_threads
     )
-
+    
     # For Ask stories, we can sort by score (default), comments, or time
     sort_by_comments = param[1] == "ask" and options.sort_by_comments
     sort_by_time = param[1] == "ask" and options.sort_by_time
     
+    # Create the menu with appropriate sorting and keyword filtering
     menu = create_menu(
         list_dict_stories, 
         param[1], 
         sort_by_score=not (sort_by_comments or sort_by_time),
-        sort_by_time=sort_by_time
+        sort_by_time=sort_by_time,
+        keywords=options.keyword,
+        highlight_keys=True
     )
     menu.show()
     return 0

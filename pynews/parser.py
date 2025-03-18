@@ -18,6 +18,7 @@ def get_parser_options() -> argparse.Namespace:
                           [--ask-top number_of_stories]
                           [--ask-discussed number_of_stories]
                           [--ask-recent number_of_stories]
+                          [--keyword "search term"]
 
             If the number of stories is not supplied, will be showed 200 from the
             500 stories.
@@ -38,6 +39,18 @@ def get_parser_options() -> argparse.Namespace:
                 $ pynews --ask-stories 10
                 This will show the 10 latest Ask HN stories with scores and comment counts.
             
+            - Filter Ask HN Stories by keyword:
+                $ pynews -a 10 --keyword "python"
+                This will show Ask HN stories containing the word "python".
+                
+            - Filter with multiple keywords (ANY match):
+                $ pynews -a 10 --keyword "python" "javascript"
+                This will show Ask HN stories containing EITHER "python" OR "javascript".
+                
+            - Filter with multiple keywords (ALL must match):
+                $ pynews -a 10 --keyword "python" "javascript" --match-all
+                This will show only stories containing BOTH "python" AND "javascript".
+            
             - Get Ask HN Stories sorted by submission time:
                 $ pynews -a 10 --sort-by-time
                 This will show the 10 Ask HN stories sorted by submission time.
@@ -53,6 +66,10 @@ def get_parser_options() -> argparse.Namespace:
             - Get Most Recent Ask HN Stories:
                 $ pynews --ask-recent 10
                 This will show the 10 most recent Ask HN stories.
+                
+            - Find Ask HN Stories with keyword:
+                $ pynews --ask-search "python" 10
+                This will search for Ask HN stories containing "python".
                 
             - View Comments for a Story:
                 $ pynews -c 12345 # or
@@ -121,6 +138,32 @@ def get_parser_options() -> argparse.Namespace:
         const=10,
         type=int,
         help="Get the N most recent Ask HN stories",
+    )
+    
+    parser.add_argument(
+        "--ask-search",
+        nargs="+",
+        metavar="KEYWORD",
+        help="Search for Ask HN stories containing specific keywords",
+    )
+    
+    parser.add_argument(
+        "--keyword",
+        nargs="+",
+        metavar="KEYWORD",
+        help="Filter stories by keyword(s)",
+    )
+    
+    parser.add_argument(
+        "--match-all",
+        action="store_true",
+        help="When using multiple keywords, require ALL keywords to match (default is ANY)",
+    )
+    
+    parser.add_argument(
+        "--case-sensitive",
+        action="store_true",
+        help="Make keyword search case-sensitive (default is case-insensitive)",
     )
 
     parser.add_argument(
@@ -222,5 +265,10 @@ def get_parser_options() -> argparse.Namespace:
     if options.ask_recent:
         options.sort_by_time = True
         options.ask_top = options.ask_recent
+    
+    # If --ask-search is used, set up keyword search
+    if options.ask_search:
+        options.keyword = options.ask_search
+        options.ask_stories = 200  # Default to a larger set for searching
         
     return options
