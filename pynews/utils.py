@@ -226,63 +226,6 @@ def filter_stories_by_author(stories, author, case_sensitive=False):
     return filtered_stories
 
 
-def highlight_keywords(text, keywords, case_sensitive=False):
-    """
-    Highlight keywords in text by wrapping them in special markers.
-    
-    Args:
-        text: The text to highlight keywords in
-        keywords: List of keywords to highlight
-        case_sensitive: Whether the search should be case-sensitive
-    
-    Returns:
-        Text with highlighted keywords
-    """
-    if not text or not keywords:
-        return text
-    
-    # Create a copy of the original text for highlighting
-    highlighted = text
-    
-    for keyword in keywords:
-        if not keyword:
-            continue
-        
-        # For case-insensitive, we need a regular expression with the i flag
-        if case_sensitive:
-            pattern = re.compile(re.escape(keyword))
-        else:
-            pattern = re.compile(re.escape(keyword), re.IGNORECASE)
-        
-        # Replace all occurrences with highlighted version
-        # We'll use ASCII color codes directly for simplicity
-        highlighted = pattern.sub(f"\033[1;33m{keyword}\033[0m", highlighted)
-    
-    return highlighted
-
-
-def highlight_author(text, author=None):
-    """
-    Highlight author name with a special format.
-    
-    Args:
-        text: The author text to highlight
-        author: The author name to check against (if None, always highlight)
-    
-    Returns:
-        Author text with highlighting
-    """
-    if not text:
-        return text
-    
-    # If author is specified, only highlight if it matches
-    if author is not None and text.lower() != author.lower():
-        return text
-    
-    # Use a distinct color for author highlighting
-    return f"\033[1;36m{text}\033[0m"  # Cyan, bold
-
-
 def sort_stories_by_score(stories, reverse=True):
     """
     Sort stories by their score (points).
@@ -396,7 +339,7 @@ def get_terminal_width():
 
 
 def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=False, 
-                keywords=None, highlight_keys=True, author_filter=None, highlight_author_name=True):
+                keywords=None, highlight_keys=False, author_filter=None, highlight_author_name=False):
     """
     Create a menu with the stories to display.
     
@@ -406,9 +349,9 @@ def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=Fa
         sort_by_score: Whether to sort Ask HN stories by score
         sort_by_time: Whether to sort Ask HN stories by submission time
         keywords: List of keywords to highlight in titles (if None, no highlighting)
-        highlight_keys: Whether to highlight keywords in the titles
+        highlight_keys: Whether to highlight keywords in the titles (DISABLED - causes display issues)
         author_filter: Username to filter stories by (only show stories from this author)
-        highlight_author_name: Whether to highlight the author name in the display
+        highlight_author_name: Whether to highlight the author name (DISABLED - causes display issues)
     """
     title = f"Pynews - {type_new.capitalize()} stories"
     
@@ -461,30 +404,15 @@ def create_menu(list_dict_stories, type_new, sort_by_score=True, sort_by_time=Fa
         comment_count = len(story.get('kids', []))
         time_ago = format_time_ago(story.get('time', 0))
         
-        # Highlight keywords in the title if requested
-        if highlight_keys and keywords and any(keywords):
-            supports_highlight = supports_color() and sys.stdout.isatty()
-            if supports_highlight:
-                story_title = highlight_keywords(story_title, keywords, case_sensitive=False)
-        
-        # Highlight author if required
-        if highlight_author_name and supports_color() and sys.stdout.isatty():
-            if author_filter:
-                # Highlight only if it matches the filter
-                if author.lower() == author_filter.lower():
-                    author = highlight_author(author)
-            else:
-                # No filter specified, highlight all authors
-                author = highlight_author(author)
-        
         # Format the display title - FIXED: Use single line format with truncated title
+        # Removed all ANSI color codes and highlighting to fix encoding issues
         if type_new == "ask":
             # Truncate title if needed to fit in the available width
             truncated_title = truncate_string(story_title, title_width)
             
-            # For Ask HN, format everything on one line to prevent highlight bar overflow
-            formatted_comments = format_comment_count(comment_count)
-            display_title = f"{truncated_title} - {points}pts, {comment_count}c, {time_ago}, by {author}"
+            # For Ask HN, format everything on one line to prevent display issues
+            # Fixed the author display by removing all color/highlighting
+            display_title = f"{truncated_title} - {points} pts, {comment_count} cmts, {time_ago}, by {author}"
         else:
             # For other story types, just use the title with reasonable truncation
             display_title = truncate_string(story_title, term_width - 5)
