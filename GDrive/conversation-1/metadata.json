@@ -13,11 +13,11 @@
 			"hfi_id": "72a02387-6680-490b-a5a2-0719c06f64ff",
 			"choice": 3,
 			"gdrive": "https://drive.google.com/file/d/1sGn2evmCO8OYt5sTRDAyla3YlwIUr8Wl/view?usp=sharing",
-			"usecase": "feature_implementation",	
-			"issue_type": "other",
-			"issue_comment": "The issue can be found on page 4.",
+			"usecase": "initial_development",	
+			"issue_type": "code correctness",
+			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
 			"issue_source": "pynews/comments.py", 
-			"comment": "There is an issue regarding rendering special characters in the comments on model A."
+			"comment": "There is an issue regarding rendering special characters in the comments on model A. This is caused by the incorrect use of Regex. However, model B does not have this issue. There is no issue found related to memory and bash commands."
 		},
 		{
 			"prompt": "Please add functionality to navigate to the previous and next pages.",
@@ -26,9 +26,9 @@
 			"gdrive": "https://drive.google.com/file/d/1MRK7I3f4DXqDhc_aZzl6aWzf7mvITo15/view?usp=sharing",
 			"usecase": "feature_implementation",	
 			"issue_type": "other",
-			"issue_comment": "",
-			"issue_source": "", 
-			"comment": ""
+			"issue_comment": "The readability issue can be found on page 2. Model A's response is less readable and more complex than model B's response.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "Both models achieve what they are supposed to do. However, model B's response is more lean and easy to understand. There is no issue found related to memory and bash commands."
 		},
 		{
 			"prompt": "Even though a story has many comments under it only the first few pages are visible. All the pages afterward are empty.",
@@ -36,10 +36,10 @@
 			"choice": -3,
 			"gdrive": "https://drive.google.com/file/d/1BTTE7fRA80kuP5NX17jwHt1d112H-U8O/view?usp=drive_link",
 			"usecase": "feature_implementation",	
-			"issue_type": "other",
-			"issue_comment": "",
-			"issue_source": "", 
-			"comment": ""
+			"issue_type": "code correctness",
+			"issue_comment": "The issue can be found on page 23. Model B didn't manage to fix the issue mentioned in the prompt.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "Model A addressed the issue mentioned in the prompt. However, model B didn't manage to fix the issue. There is no issue found related to memory and bash commands."
 		},
 		{
 			"prompt": "Please add a loading indicator while fetching data.",
@@ -47,10 +47,10 @@
 			"choice": -3,
 			"gdrive": "https://drive.google.com/file/d/1pgfDolnQ-leJ3Cl4rU0eUsE6ZJvRWqGa/view?usp=drive_link",
 			"usecase": "feature_implementation",	
-			"issue_type": "other",
-			"issue_comment": "",
-			"issue_source": "", 
-			"comment": ""
+			"issue_type": "technical_inconsistency",
+			"issue_comment": "The issue can be found on page 31.Model B did not use a separate file to write the loading indicator code.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "Model B did not use a separate file to write the loading indicator code. There is no issue found related to memory and bash commands."
 		},
 		{
 			"prompt": "Please add colors for better UI/UX. This makes navigation and interaction with the app smoother.",
@@ -59,9 +59,9 @@
 			"gdrive": "https://drive.google.com/file/d/1fVdHltdbjla7WropOmlnz3Grv90H32LM/view?usp=drive_link",
 			"usecase": "feature_implementation",	
 			"issue_type": "other",
-			"issue_comment": "",
-			"issue_source": "", 
-			"comment": ""
+			"issue_comment": "The issue can be found on page 27. Model B's colors are not as vibrant as model A's colors.",
+			"issue_source": "pynews/colors.py", 
+			"comment": "Model B's colors are not as vibrant as model A's colors. There is no issue found related to memory and bash commands."
 		},
 		{
 			"prompt": "When choosing a page number I don't want to press `g` then the page number. I want to press just the page number.",
@@ -70,9 +70,9 @@
 			"gdrive": "https://drive.google.com/file/d/1jkir6XXMrM-wuqIDwef-wHUsQMW8TcpJ/view?usp=drive_link",
 			"usecase": "feature_implementation",	
 			"issue_type": "other",
-			"issue_comment": "",
-			"issue_source": "", 
-			"comment": ""
+			"issue_comment": "The issue can be found on page 29. Model B's code does not result an app that is as quickly navigatable as model A's code.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "Model B's code does not result an app that is as quickly navigatable as model A's code. There is no issue found related to memory and bash commands."
 		},
 		{
 			"prompt": "Now, I want to navigate to pages when I press the key without an additional press on the return key",
@@ -81,9 +81,9 @@
 			"gdrive": "https://drive.google.com/file/d/14BARZQopGBOTBEH4gm1NiFhL0S-og92c/view?usp=drive_link",
 			"usecase": "feature_implementation",	
 			"issue_type": "other",
-			"issue_comment": "",
-			"issue_source": "", 
-			"comment": ""
+			"issue_comment": "The issue can be found on pages from 33 to 35. Model A's code is more readable and easier to understand than model B's code.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "Both models achieve what they are supposed to do. However, model A's response is more lean and easy to understand. There is no issue found related to memory and bash commands."
 		},
 		{
 			"prompt": "When pressing two-digit numbers the quickly routes to the first digit page. For example, If I want to go to page 24 and press 2 and 4 consecutively, the app routes to page 2.",
@@ -92,9 +92,9 @@
 			"gdrive": "https://drive.google.com/file/d/1RM1IUZrFM_QfBGCUUDx-bSHvQkCea2NU/view?usp=sharing",
 			"usecase": "debugging_fixes",	
 			"issue_type": "other",
-			"issue_comment": "",
-			"issue_source": "", 
-			"comment": ""
+			"issue_comment": "The issue can be found on page 34. Model A's code is more readable and easier to understand than model B's code.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "Both models achieve what they are supposed to do. However, model A's response is more lean and easy to understand. There is no issue found related to memory and bash commands."
 		},
 		{
 			"prompt": "Now, add an option to sort the comments by time.",
@@ -103,9 +103,9 @@
 			"gdrive": "https://drive.google.com/file/d/13lE3ehVOcFwebqUjv7yARGmGL4aFFoVA/view?usp=drive_link",
 			"usecase": "feature_implementation",	
 			"issue_type": "other",
-			"issue_comment": "",
-			"issue_source": "", 
-			"comment": ""
+			"issue_comment": "The issue can be on page 36. Model A's code is more readable and easier to understand than model B's code.",
+			"issue_source": "pynews/comments.py",
+			"comment": "Both models achieve what they are supposed to do. However, model B's response is more lean and easy to understand. There is no issue found related to memory and bash commands."
 		},
 		{
 			"prompt": "Please add a horizontal growing progress bar while fetching a comment.",
@@ -114,9 +114,10 @@
 			"gdrive": "https://drive.google.com/file/d/1u9VpK3ht3rfNIj3aGVxtJq_uMYEUUKFY/view?usp=drive_link",
 			"usecase": "feature_implementation",	
 			"issue_type": "other",
-			"issue_comment": "",
-			"issue_source": "", 
-			"comment": ""
+			"issue_comment": "The issue can be found on page 13. Model B's code is more readable and easier to understand than model A's code.",
+			"issue_source": "pynews/comments.py", 
+			"comment": "Model B's code is more readable and easier to understand than model A's code. There is no issue found related to memory and bash commands."
 		}
   ]
 }
+
