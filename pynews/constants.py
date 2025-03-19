@@ -6,6 +6,8 @@ URL_NEWS_STORIES = "https://hacker-news.firebaseio.com/v0/newstories.json"
 
 URL_TOP_STORIES = "https://hacker-news.firebaseio.com/v0/topstories.json"
 
+URL_ASK_STORIES = "https://hacker-news.firebaseio.com/v0/askstories.json"
+
 URL_ITEM = "https://hacker-news.firebaseio.com/v0/item/{}.json"
 
-URLS = {"top": URL_TOP_STORIES, "news": URL_NEWS_STORIES, "item": URL_ITEM}
+URLS = {"top": URL_TOP_STORIES, "news": URL_NEWS_STORIES, "ask": URL_ASK_STORIES, "item": URL_ITEM}

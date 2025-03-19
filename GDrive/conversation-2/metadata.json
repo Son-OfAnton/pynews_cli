@@ -1,0 +1,133 @@
+{
+	"uuid": "ab43b630-dded-4140-ae7e-854deafd8457",
+	"model": "83aa91117c2fac3e25a3757eaa59f29ed3aeaf4dd7d3d384c673086c321e0644",
+	"root_gdrive": "https://drive.google.com/drive/folders/1bCWBjvFr2sxvKi4CkrhZw1nnpHiVouYV?usp=sharing",
+	"workflow": "existing_codebase",
+	"codebase": {
+		"url": "https://github.com/mazulo/pynews_cli",
+		"description": "A CLI tool to read Hacker News stories."
+	},
+	"prompts": [
+		{
+			"prompt": "Ask: Fetch and display \"Ask HN\" stories. Develop a feature that retrieves the latest \"Ask HN\" stories from the API and displays them in the terminal. Include details such as title, author, score, number of comments, and submission time. Allow users to filter Ask HN posts by keyword.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": -2,
+			"gdrive": "https://drive.google.com/file/d/19Ad1DW46sZLDIjjZK2sVsP3-ox-sMuZe/view?usp=sharing",
+			"usecase": "initial_development",
+			"issue_type": "incorrect_bash_usage",
+			"issue_comment": "The issue can be found on page 55.",
+			"issue_source": "A temporary test_ask_stories.py file",
+			"comment": "Unnecessary use of a whole Python file to test a URL from model B. It should have used the Bash command CURL instead."
+		},
+    {
+      "prompt": "Now add a feature to show the author of the ASK story.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": 3,
+			"gdrive": "https://drive.google.com/file/d/1jxlHXAH3ouSDetYcFyWlaMkilUcR1PDn/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 9.",
+			"issue_source": "pynews/ask_view.py",
+			"comment": "Model A The author name is being seen instead gibberish characters are seen."
+		},
+    {
+      "prompt": "Now add a functionality to show the score of the ASK story.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": 2,
+			"gdrive": "https://drive.google.com/file/d/1JKEF4EEDa3hGwIXeguIw0v8hzoSEhMGY/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "technical_inconsistency",
+			"issue_comment": "The issue can be found on page 27.",
+			"issue_source": "pynews/comments.py",
+			"comment": "Model A might have performance issues on printing emojies to represent score on the Bash terminal. Model B does not have this issue."
+		},
+    {
+      "prompt": "Now add a feature to show the number of comments for ASK stories.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": -2,
+			"gdrive": "https://drive.google.com/file/d/1BspEge1ikvqU-ziINHpRjt2B9dyhr92A/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "code_correctness",
+			"issue_comment": "The issue can be found on page 36.",
+			"issue_source": "pynews/comments.py",
+			"comment": "The `--min-comments` flag is not working as expected for model B. It is not filtering the stories based on the minimum number of comments. However, model A is working as expected."
+		},
+    {
+      "prompt": "Now add a feature to show the submission time of the ASK stories.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": -2,
+			"gdrive": "https://drive.google.com/file/d/1seGhMrpblx5YGMSYiNq39LJK18buWBln/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "code_correctness",
+			"issue_comment": "The issue can be found on page 32.",
+			"issue_source": "pynews/pynews.py",
+			"comment": "The `--sort-by-time` flag is not working as expected for model B. It is not sorting the stories based on the submission time. However, model A is working as expected."
+		},
+    {
+      "prompt": "Now add a feature to allow users to filter ASK stories by keyword.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": -2,
+			"gdrive": "https://drive.google.com/file/d/1855Hcx8Nyoth0GhabaMUvE7yop-cgx2j/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "code_correctness",
+			"issue_comment": "The issue can be found on page 71.",
+			"issue_source": "pynews/pynews.py",
+			"comment": "Model B did not fully covered case-insensitive search for keywords. Model A is working as expected."
+		},
+    {
+      "prompt": "Add a feature to search for an ASK story posted by a particular user.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": -1,
+			"gdrive": "https://drive.google.com/file/d/1LHQPGD7RvWEoXrWMrfvNITl7F5uilkQQ/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "other",
+			"issue_comment": "No particular issue is found on both models.",
+			"issue_source": "No particular issue is found on both models.",
+			"comment": "No particular issue is found on both models."
+		},
+    {
+      "prompt": "When I run the command `python3 -m pynews -a` redundant numbered bullet points are seen one with a period and the other enclosed in a square bracket.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": -1,
+			"gdrive": "https://drive.google.com/file/d/1nd-RmxWKloUQzl7PNmfqZMSedlKeK4px/view?usp=drive_link",
+			"usecase": "debugging_fixes",
+			"issue_type": "other",
+			"issue_comment":"No particular issue is found on both models.",
+			"issue_source": "No particular issue is found on both models.",
+			"comment": "No particular issue is found on both models."
+		},
+    {
+      "prompt": "The ASK stories fetched after running the command `python3 -m pynews -a` have a narrow default width. Due to this the highlight bar overflows to the row below when navigating with the arrow keys. Please fix this issue.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": 4,
+			"gdrive": "https://drive.google.com/file/d/1DNfveZDvD9rdYNUW0HF3ve766b9mEhST/view?usp=drive_link",
+			"usecase": "debugging_fixes",
+			"issue_type": "missing_memory",
+			"issue_comment": "The issue can found on page 4.",
+			"issue_source": "pynews/utils.py",
+			"comment": "Model A forgot to add `highlight_keywords` function in the `utils.py` file. While model B has this function."
+		},
+    {
+      "prompt": "The author names associated with the fetched ASK stories is surrounded by cryptic characters that might be caused by encoding bugs. Please fix this issue.",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": -1,
+			"gdrive": "https://drive.google.com/file/d/1jCqmao4dkFtrEikPP3-fXqdZj7ParrLj/view?usp=drive_link",
+			"usecase": "debugging_fixes",
+			"issue_type": "No particular issue is found on both models.",
+			"issue_comment": "No particular issue is found on both models.",
+			"issue_source": "No particular issue is found on both models.",
+			"comment": "No particular issue is found on both models."
+		},
+    {
+      "prompt": "The following error message is being thrown when I try to fetch ASK stories. The error message is `ImportError: cannot import name 'highlight_keywords' from 'pynews.utils' (/Users/admasgirma/Desktop/projects/Turing/Anthropic/pynews_cli/pynews/utils.py)`. The error is caused by missing `highlight_keywords` function from `utils.py`",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": 4,
+			"gdrive": "https://drive.google.com/file/d/1-UvM3kl-_Wda4US4V91JPgwrvfCPT9dY/view?usp=drive_link",
+			"usecase": "debugging_fixes",
+			"issue_type": "missing_memory",
+			"issue_comment": "The issue can be found on page 27.",
+			"issue_source": "pynews/utils.py",
+			"comment": "Model A is hallucinating by adding Chinese character that does not exist in a previous file. Model B is working as expected."
+		}
+	]
+}
