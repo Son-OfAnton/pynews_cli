@@ -12,8 +12,10 @@ from webbrowser import open as url_open
 from .colors import Colors, ColorScheme, colorize, supports_color
 from .getch import getch
 from .utils import (
-    get_story, format_comment_count, format_time_ago, 
-    filter_stories_by_keywords, highlight_keywords
+    get_story, format_comment_count, format_time_ago,
+    filter_stories_by_keywords, sort_stories_by_score,
+    sort_stories_by_comments, sort_stories_by_time,
+    get_stories
 )
 
 USE_COLORS = supports_color()
@@ -125,6 +127,42 @@ def format_comment_count_detailed(count):
         else:
             return "No comments yet"
 
+def highlight_keywords_in_text(text, keywords, case_sensitive=False):
+    """
+    Highlight keywords in text by wrapping them in special markers.
+    
+    Args:
+        text: The text to highlight keywords in
+        keywords: List of keywords to highlight
+        case_sensitive: Whether the search should be case-sensitive
+    
+    Returns:
+        Text with highlighted keywords
+    """
+    if not text or not keywords:
+        return text
+    
+    # Create a copy of the original text for highlighting
+    highlighted = text
+    
+    for keyword in keywords:
+        if not keyword:
+            continue
+        
+        # For case-insensitive, we need a regular expression with the i flag
+        if case_sensitive:
+            pattern = re.compile(re.escape(keyword))
+        else:
+            pattern = re.compile(re.escape(keyword), re.IGNORECASE)
+        
+        # Replace all occurrences with highlighted version
+        if USE_COLORS:
+            highlighted = pattern.sub(lambda m: colorize(m.group(0), Colors.BRIGHT_YELLOW + Colors.BOLD), highlighted)
+        else:
+            highlighted = pattern.sub(lambda m: f"*{m.group(0)}*", highlighted)
+    
+    return highlighted
+
 def display_ask_story_details(story_id, keywords=None, case_sensitive=False):
     """
     Display detailed information about an Ask HN story, 
@@ -156,7 +194,7 @@ def display_ask_story_details(story_id, keywords=None, case_sensitive=False):
     
     # Highlight keywords in title and text if provided
     if keywords and any(keywords) and USE_COLORS:
-        title = highlight_keywords(title, keywords, case_sensitive=case_sensitive)
+        title = highlight_keywords_in_text(title, keywords, case_sensitive=case_sensitive)
         
     # Display the header with title
     if USE_COLORS:
@@ -192,11 +230,11 @@ def display_ask_story_details(story_id, keywords=None, case_sensitive=False):
         
         # Highlight keywords in the content if provided
         if keywords and any(keywords) and USE_COLORS:
-            cleaned_text = highlight_keywords(cleaned_text, keywords, case_sensitive=case_sensitive)
+            cleaned_text = highlight_keywords_in_text(cleaned_text, keywords, case_sensitive=case_sensitive)
             
         if USE_COLORS:
             print(colorize("\nContent:", ColorScheme.SUBHEADER))
-            # Wrap and colorize text content
+            # Wrap text content
             wrapper = textwrap.TextWrapper(width=80, initial_indent='  ', subsequent_indent='  ')
             wrapped_text = wrapper.fill(cleaned_text)
             
@@ -260,7 +298,6 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
         match_all: If True, all keywords must match; if False, any keyword can match
         case_sensitive: Whether the search should be case-sensitive
     """
-    from .utils import get_stories, get_story, sort_stories_by_score, sort_stories_by_comments, sort_stories_by_time
     from .loading import LoadingIndicator
     
     clear_screen()
@@ -355,9 +392,9 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
         comment_count = len(story.get('kids', []))
         time_ago = format_time_ago(story.get('time', 0))
         
-        # Highlight keywords in the title if provided
+        #  If keywords were provided and colorization is enabled
         if keywords and any(keywords) and USE_COLORS:
-            title = highlight_keywords(title, keywords, case_sensitive=case_sensitive)
+            title = highlight_keywords_in_text(title, keywords, case_sensitive=case_sensitive)
         
         if USE_COLORS:
             print(f"\n{colorize(f'{i+1}. {title}', ColorScheme.HEADER)}")

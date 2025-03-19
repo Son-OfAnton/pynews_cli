@@ -117,6 +117,17 @@
 			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
 			"issue_source": "pynews/comments.py",
 			"comment": "Model A The author name is being seen instead gibberish characters are seen."
+		},
+    {
+      "prompt": "The following error message is being thrown when I try to fetch ASK stories. The error message is `ImportError: cannot import name 'highlight_keywords' from 'pynews.utils' (/Users/admasgirma/Desktop/projects/Turing/Anthropic/pynews_cli/pynews/utils.py)`. The error is caused by missing `highlight_keywords` function from `utils.py`",
+			"hfi_id": "74f12ade-7641-47ad-81b9-2e98faeac73e",
+			"choice": 4,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "other",
+			"issue_comment": "The issue can be found on page 6. The issues is caused by a bug in handling special charaters using Regex by model A.",
+			"issue_source": "pynews/comments.py",
+			"comment": "Model A is hallucinating by writing code that does not exist in the memory and adding Chinese characters to the code."
 		}
 	]
 }
