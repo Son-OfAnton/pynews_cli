@@ -1,5 +1,6 @@
 """
-Module for simple display of job listings from Hacker News with arrow key navigation.
+Module for simple display of job listings from Hacker News with arrow key navigation
+and keyword filtering.
 """
 import os
 import datetime
@@ -145,6 +146,92 @@ def filter_jobs_by_company(jobs, company_name, case_sensitive=False):
                 
     return filtered_jobs
 
+def filter_jobs_by_keywords(jobs, keywords, match_all=False, case_sensitive=False):
+    """
+    Filter job listings based on keywords in the title or text.
+    
+    Args:
+        jobs: List of job dictionaries
+        keywords: List of keywords to search for
+        match_all: If True, all keywords must match; if False, any keyword can match
+        case_sensitive: Whether to use case-sensitive matching
+        
+    Returns:
+        Filtered list of jobs matching the keywords
+    """
+    if not keywords or not any(keywords):
+        return jobs
+    
+    filtered_jobs = []
+    
+    for job in jobs:
+        title = job.get('title', '')
+        text = job.get('text', '')
+        
+        # Combine title and text for searching
+        content = title + ' ' + text
+        
+        # For case-insensitive search, convert to lowercase
+        if not case_sensitive:
+            content = content.lower()
+            search_keywords = [k.lower() for k in keywords]
+        else:
+            search_keywords = keywords
+        
+        # Check if the keywords are in the content
+        matches = []
+        for keyword in search_keywords:
+            if keyword in content:
+                matches.append(True)
+            else:
+                matches.append(False)
+        
+        # Determine if the job should be included based on matching strategy
+        if match_all and all(matches):
+            filtered_jobs.append(job)
+        elif not match_all and any(matches):
+            filtered_jobs.append(job)
+    
+    return filtered_jobs
+
+def highlight_keywords(text, keywords, case_sensitive=False):
+    """
+    Highlight keywords in text by adding formatting or markers.
+    
+    Args:
+        text: Text to highlight keywords in
+        keywords: List of keywords to highlight
+        case_sensitive: Whether to use case-sensitive matching
+        
+    Returns:
+        Text with highlighted keywords
+    """
+    if not text or not keywords or not any(keywords):
+        return text
+    
+    # For each keyword, highlight it in the text
+    highlighted_text = text
+    for keyword in keywords:
+        if not keyword:
+            continue
+            
+        # Create regex pattern based on case sensitivity
+        if case_sensitive:
+            pattern = re.compile(f'({re.escape(keyword)})')
+        else:
+            pattern = re.compile(f'({re.escape(keyword)})', re.IGNORECASE)
+            
+        # Apply highlighting
+        if USE_COLORS:
+            highlighted_text = pattern.sub(
+                lambda m: colorize(m.group(0), Colors.BRIGHT_YELLOW + Colors.BOLD), 
+                highlighted_text
+            )
+        else:
+            highlighted_text = pattern.sub(r'*\1*', highlighted_text)
+            
+    return highlighted_text
+
 def sort_jobs_by_date(jobs, newest_first=True):
     """
     Sort job listings by their posting date.
@@ -207,9 +294,35 @@ def read_key():
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
-def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by_score=False, company_filter=None, min_score=None):
+def prompt_for_input(prompt_text):
     """
-    Display a simplified list of job listings from Hacker News with arrow key navigation.
+    Display a prompt and get user input, temporarily exiting raw mode.
+    
+    Args:
+        prompt_text: Text to display as prompt
+        
+    Returns:
+        User input string
+    """
+    # Exit raw mode to get normal input behavior
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        if USE_COLORS:
+            print(colorize(prompt_text, ColorScheme.PROMPT))
+        else:
+            print(prompt_text)
+        return input("> ").strip()
+    finally:
+        tty.setraw(fd)
+
+def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by_score=False, 
+                        company_filter=None, min_score=None, keywords=None, match_all=False,
+                        case_sensitive=False):
+    """
+    Display a simplified list of job listings from Hacker News with arrow key navigation
+    and keyword filtering.
     
     Args:
         limit: Maximum number of jobs to fetch
@@ -218,6 +331,9 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
         sort_by_score: Whether to sort by score instead of date
         company_filter: Optional company name to filter job listings by
         min_score: Optional minimum score threshold for jobs to display
+        keywords: Optional list of keywords to filter by
+        match_all: If True, all keywords must match; if False, any keyword can match
+        case_sensitive: Whether keyword matching should be case-sensitive
     """
     from .loading import LoadingIndicator
     
@@ -240,7 +356,7 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
     loader.start()
     try:
         jobs = []
-        for job_id in job_ids[:min(limit * 2, len(job_ids))]:  # Fetch more to allow for filtering
+        for job_id in job_ids[:min(limit * 3, len(job_ids))]:  # Fetch more to allow for filtering
             job = get_story(job_id)
             if job:  # Make sure we have a valid job
                 # Extract company name and add to job data
@@ -250,6 +366,27 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                 jobs.append(job)
     finally:
         loader.stop()
+    
+    # Apply keyword filtering if specified
+    if keywords and any(keywords):
+        original_count = len(jobs)
+        jobs = filter_jobs_by_keywords(jobs, keywords, match_all=match_all, case_sensitive=case_sensitive)
+        filtered_count = len(jobs)
+        
+        if filtered_count == 0:
+            if USE_COLORS:
+                if match_all:
+                    print(colorize(f"\nNo job listings found matching ALL keywords: {', '.join(keywords)}.", 
+                                ColorScheme.ERROR))
+                else:
+                    print(colorize(f"\nNo job listings found matching ANY of: {', '.join(keywords)}.", 
+                                ColorScheme.ERROR))
+            else:
+                if match_all:
+                    print(f"\nNo job listings found matching ALL keywords: {', '.join(keywords)}.")
+                else:
+                    print(f"\nNo job listings found matching ANY of: {', '.join(keywords)}.")
+            return
     
     # Apply score filtering if specified
     if min_score is not None and min_score > 0:
@@ -281,7 +418,7 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
     
     # Sort jobs by selected criterion
     if sort_by_score:
-        jobs = sort_jobs_by_score(jobs)
+        jobs = sort_jobs_by_score(jobs, highest_first=True)
     else:
         jobs = sort_jobs_by_date(jobs, newest_first=sort_newest_first)
     
@@ -297,6 +434,8 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
     is_sort_by_score = sort_by_score
     current_company_filter = company_filter
     current_min_score = min_score
+    current_keywords = keywords or []
+    current_match_all = match_all
     
     # Track the currently selected job
     selected_idx = 0
@@ -320,6 +459,10 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                 filters.append(f"company: '{current_company_filter}'")
             if current_min_score is not None and current_min_score > 0:
                 filters.append(f"min score: {current_min_score}")
+            if current_keywords and any(current_keywords):
+                match_type = "ALL" if current_match_all else "ANY"
+                keywords_display = f"keywords ({match_type}): {', '.join(current_keywords)}"
+                filters.append(keywords_display)
                 
             if filters:
                 filter_display = colorize(f" - Filtered by {', '.join(filters)}", ColorScheme.INFO)
@@ -335,6 +478,10 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                 filters.append(f"company: '{current_company_filter}'")
             if current_min_score is not None and current_min_score > 0:
                 filters.append(f"min score: {current_min_score}")
+            if current_keywords and any(current_keywords):
+                match_type = "ALL" if current_match_all else "ANY"
+                keywords_display = f"keywords ({match_type}): {', '.join(current_keywords)}"
+                filters.append(keywords_display)
             
             if filters:
                 header_text += f" - Filtered by {', '.join(filters)}"
@@ -354,11 +501,16 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
             # Get job information
             title = job.get('title', 'Untitled Job Listing')
             url = job.get('url', '')
+            text = job.get('text', '')
             timestamp = job.get('time', 0)
             time_ago = format_time_ago(timestamp)
             absolute_date = format_absolute_date(timestamp)
             company = job.get('company')
             score = job.get('score', 0)
+            
+            # Apply keyword highlighting if applicable
+            if current_keywords and any(current_keywords):
+                title = highlight_keywords(title, current_keywords, case_sensitive)
             
             # If no external URL, use the HN link
             if not url:
@@ -371,7 +523,12 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                 # Use different formatting based on selection state
                 if is_selected:
                     # Format the selected job with a distinct highlight
-                    job_title = colorize(f"➤ {title}", Colors.BRIGHT_WHITE + Colors.BOLD + Colors.BG_BLUE)
+                    # Note: We don't apply BG_BLUE to the title if it has keywords highlighted
+                    if current_keywords and any(current_keywords):
+                        job_title = colorize(f"➤ ", Colors.BRIGHT_WHITE + Colors.BOLD + Colors.BG_BLUE) + title
+                    else:
+                        job_title = colorize(f"➤ {title}", Colors.BRIGHT_WHITE + Colors.BOLD + Colors.BG_BLUE)
+                    
                     job_score = colorize(format_score(score), Colors.BOLD)
                     job_date = colorize(f"📅 Posted on: {absolute_date} ({time_ago})", ColorScheme.TIME + Colors.BOLD)
                     
@@ -388,7 +545,11 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                     print(f"   URL: {colorize(url, ColorScheme.URL + Colors.BOLD)}")
                 else:
                     # Format non-selected jobs normally
-                    job_title = colorize(title, ColorScheme.HEADER)
+                    if current_keywords and any(current_keywords):
+                        job_title = title  # Already has highlighting applied
+                    else:
+                        job_title = colorize(title, ColorScheme.HEADER)
+                        
                     job_score = format_score(score)
                     job_date = colorize(f"📅 Posted on: {absolute_date}  ({time_ago})", ColorScheme.TIME)
                     
@@ -417,6 +578,25 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                     
                 print(f"   📅 Posted on: {absolute_date} ({time_ago})")
                 print(f"   URL: {url}")
+            
+            # Display a snippet of the job description text if available
+            if text and is_selected:
+                # Clean up the text (remove HTML)
+                cleaned_text = re.sub(r'<[^>]+>', ' ', text)
+                cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+                
+                # Truncate to a reasonable length
+                if len(cleaned_text) > 200:
+                    cleaned_text = cleaned_text[:197] + "..."
+                
+                # Highlight keywords in the text if applicable
+                if current_keywords and any(current_keywords):
+                    cleaned_text = highlight_keywords(cleaned_text, current_keywords, case_sensitive)
+                
+                if USE_COLORS:
+                    print(f"   {colorize('Description: ', ColorScheme.SUBHEADER)}{cleaned_text}")
+                else:
+                    print(f"   Description: {cleaned_text}")
         
         # Display navigation instructions
         if USE_COLORS:
@@ -452,6 +632,18 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                                       ColorScheme.NAV_ACTIVE)
                 print(sort_option)
             
+            # Filter by keywords
+            keyword_option = "[k] Filter by keywords"
+            if current_keywords and any(current_keywords):
+                match_type = "ALL" if current_match_all else "ANY"
+                keyword_option += f" (current: {match_type} of {', '.join(current_keywords)})"
+            print(colorize(keyword_option, ColorScheme.NAV_ACTIVE))
+            
+            # Toggle keyword match type
+            if current_keywords and any(current_keywords):
+                match_toggle = f"[m] Toggle match type: currently {('ALL' if current_match_all else 'ANY')}"
+                print(colorize(match_toggle, ColorScheme.NAV_ACTIVE))
+            
             # Filter by company
             filter_option = "[f] Filter by company" 
             if current_company_filter:
@@ -465,7 +657,9 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
             print(colorize(score_option, ColorScheme.NAV_ACTIVE))
             
             # Clear filters option (if any active)
-            if current_company_filter or (current_min_score is not None and current_min_score > 0):
+            has_filters = (current_company_filter or (current_min_score is not None and current_min_score > 0) or 
+                          (current_keywords and any(current_keywords)))
+            if has_filters:
                 clear_filter = "[c] Clear all filters"
                 print(colorize(clear_filter, ColorScheme.NAV_ACTIVE))
             
@@ -479,6 +673,18 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
             if not is_sort_by_score:
                 print(f"[d] Sort by date: {'newest first' if newest_first else 'oldest first'}")
             
+            # Filter by keywords
+            keyword_option = "[k] Filter by keywords"
+            if current_keywords and any(current_keywords):
+                match_type = "ALL" if current_match_all else "ANY"
+                keyword_option += f" (current: {match_type} of {', '.join(current_keywords)})"
+            print(keyword_option)
+            
+            # Toggle keyword match type
+            if current_keywords and any(current_keywords):
+                match_toggle = f"[m] Toggle match type: currently {('ALL' if current_match_all else 'ANY')}"
+                print(match_toggle)
+            
             filter_option = "[f] Filter by company" 
             if current_company_filter:
                 filter_option += f" (current: '{current_company_filter}')"
@@ -489,11 +695,12 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                 score_option += f" (current: {current_min_score})"
             print(score_option)
             
-            if current_company_filter or (current_min_score is not None and current_min_score > 0):
+            has_filters = (current_company_filter or (current_min_score is not None and current_min_score > 0) or 
+                         (current_keywords and any(current_keywords)))
+            if has_filters:
                 print("[c] Clear all filters")
                 
             print("\n[q] Return to main menu")
-        
         
         # Get user input using arrow keys
         key = read_key()
@@ -525,6 +732,197 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                 if not url:
                     url = f"https://news.ycombinator.com/item?id={job.get('id')}"
                 url_open(url)
+        elif key == 'k':
+            # Prompt for keyword filtering
+            try:
+                keyword_input = prompt_for_input("\nEnter keywords to filter by (space-separated, or press Enter to cancel):")
+                if keyword_input:
+                    # Convert to list of keywords (split by spaces)
+                    new_keywords = [k.strip() for k in keyword_input.split()]
+                    if new_keywords:
+                        current_keywords = new_keywords
+                        
+                        # Reload all jobs and apply all filters
+                        jobs = []
+                        loader = LoadingIndicator(message="Applying keyword filter...")
+                        loader.start()
+                        try:
+                            for job_id in job_ids[:min(limit * 3, len(job_ids))]:
+                                job = get_story(job_id)
+                                if job:
+                                    company, position = extract_company_name(job.get('title', ''))
+                                    job['company'] = company
+                                    job['position'] = position
+                                    jobs.append(job)
+                                    
+                            #  Apply all active filters
+                            jobs = filter_jobs_by_keywords(
+                                jobs, 
+                                current_keywords, 
+                                match_all=current_match_all, 
+                                case_sensitive=case_sensitive
+                            )
+                            
+                            if current_min_score is not None and current_min_score > 0:
+                                jobs = [j for j in jobs if j.get('score', 0) >= current_min_score]
+                                
+                            if current_company_filter:
+                                jobs = filter_jobs_by_company(jobs, current_company_filter)
+                            
+                        finally:
+                            loader.stop()
+                            
+                        if not jobs:
+                            if USE_COLORS:
+                                match_type = "ALL" if current_match_all else "ANY"
+                                print(colorize(f"\nNo jobs found matching {match_type} keywords: {', '.join(current_keywords)}",
+                                             ColorScheme.ERROR))
+                                print(colorize("Press any key to continue...", ColorScheme.PROMPT))
+                            else:
+                                match_type = "ALL" if current_match_all else "ANY"
+                                print(f"\nNo jobs found matching {match_type} keywords: {', '.join(current_keywords)}")
+                                print("Press any key to continue...")
+                            read_key()  # Wait for keypress
+                            
+                            # Revert to previous keywords
+                            current_keywords = []
+                                
+                            # Reload all jobs again without keyword filter
+                            jobs = []
+                            loader = LoadingIndicator(message="Reloading jobs...")
+                            loader.start()
+                            try:
+                                for job_id in job_ids[:min(limit * 3, len(job_ids))]:
+                                    job = get_story(job_id)
+                                    if job:
+                                        company, position = extract_company_name(job.get('title', ''))
+                                        job['company'] = company
+                                        job['position'] = position
+                                        jobs.append(job)
+                                        
+                                # Apply remaining active filters
+                                if current_min_score is not None and current_min_score > 0:
+                                    jobs = [j for j in jobs if j.get('score', 0) >= current_min_score]
+                                    
+                                if current_company_filter:
+                                    jobs = filter_jobs_by_company(jobs, current_company_filter)
+                            finally:
+                                loader.stop()
+                        else:
+                            # Sort the filtered results
+                            if is_sort_by_score:
+                                jobs = sort_jobs_by_score(jobs)
+                            else:
+                                jobs = sort_jobs_by_date(jobs, newest_first=newest_first)
+                                
+                            # Limit to requested number
+                            jobs = jobs[:min(limit, len(jobs))]
+                
+                        # Reset page and selection
+                        current_page = 1
+                        selected_idx = 0
+                        total_pages = max(1, (len(jobs) + page_size - 1) // page_size)
+            except Exception as e:
+                if USE_COLORS:
+                    print(colorize(f"\nError processing keywords: {e}", ColorScheme.ERROR))
+                    print(colorize("Press any key to continue...", ColorScheme.PROMPT))
+                else:
+                    print(f"\nError processing keywords: {e}")
+                    print("Press any key to continue...")
+                read_key()  # Wait for keypress
+                
+        elif key == 'm' and current_keywords and any(current_keywords):
+            # Toggle between 'any' and 'all' keyword matching
+            current_match_all = not current_match_all
+            
+            # Reapply keyword filter with new match type
+            loader = LoadingIndicator(message=f"Updating to match {('ALL' if current_match_all else 'ANY')} keywords...")
+            loader.start()
+            try:
+                # Reload all jobs
+                jobs = []
+                for job_id in job_ids[:min(limit * 3, len(job_ids))]:
+                    job = get_story(job_id)
+                    if job:
+                        company, position = extract_company_name(job.get('title', ''))
+                        job['company'] = company
+                        job['position'] = position
+                        jobs.append(job)
+                        
+                # Apply all filters with new match type
+                jobs = filter_jobs_by_keywords(
+                    jobs, 
+                    current_keywords, 
+                    match_all=current_match_all, 
+                    case_sensitive=case_sensitive
+                )
+                
+                if current_min_score is not None and current_min_score > 0:
+                    jobs = [j for j in jobs if j.get('score', 0) >= current_min_score]
+                    
+                if current_company_filter:
+                    jobs = filter_jobs_by_company(jobs, current_company_filter)
+            finally:
+                loader.stop()
+                
+            if not jobs:
+                if USE_COLORS:
+                    match_type = "ALL" if current_match_all else "ANY"
+                    print(colorize(f"\nNo jobs found matching {match_type} keywords: {', '.join(current_keywords)}",
+                                 ColorScheme.ERROR))
+                    print(colorize("Press any key to continue...", ColorScheme.PROMPT))
+                else:
+                    match_type = "ALL" if current_match_all else "ANY"
+                    print(f"\nNo jobs found matching {match_type} keywords: {', '.join(current_keywords)}")
+                    print("Press any key to continue...")
+                read_key()  # Wait for keypress
+                
+                # Revert to previous match type
+                current_match_all = not current_match_all
+                
+                # Reload with previous match type
+                loader = LoadingIndicator(message="Reverting to previous filter...")
+                loader.start()
+                try:
+                    jobs = []
+                    for job_id in job_ids[:min(limit * 3, len(job_ids))]:
+                        job = get_story(job_id)
+                        if job:
+                            company, position = extract_company_name(job.get('title', ''))
+                            job['company'] = company
+                            job['position'] = position
+                            jobs.append(job)
+                            
+                    # Re-apply all filters with original match type
+                    jobs = filter_jobs_by_keywords(
+                        jobs, 
+                        current_keywords, 
+                        match_all=current_match_all, 
+                        case_sensitive=case_sensitive
+                    )
+                    
+                    if current_min_score is not None and current_min_score > 0:
+                        jobs = [j for j in jobs if j.get('score', 0) >= current_min_score]
+                        
+                    if current_company_filter:
+                        jobs = filter_jobs_by_company(jobs, current_company_filter)
+                finally:
+                    loader.stop()
+            else:
+                # Sort and limit the results
+                if is_sort_by_score:
+                    jobs = sort_jobs_by_score(jobs)
+                else:
+                    jobs = sort_jobs_by_date(jobs, newest_first=newest_first)
+                    
+                # Limit to requested number
+                jobs = jobs[:min(limit, len(jobs))]
+                
+                # Reset page and selection
+                current_page = 1
+                selected_idx = 0
+                total_pages = max(1, (len(jobs) + page_size - 1) // page_size)
+                
         elif key == 't':
             # Toggle between sorting by score and by date
             is_sort_by_score = not is_sort_by_score
@@ -550,22 +948,8 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
             selected_idx = 0
         elif key == 'f':
             # Prompt for company filter
-            if USE_COLORS:
-                print(colorize("\nEnter company name to filter by (or press Enter to cancel):", ColorScheme.PROMPT))
-            else:
-                print("\nEnter company name to filter by (or press Enter to cancel):")
-                
-            # Get user input for company name
             try:
-                # Exit raw mode to get normal input behavior
-                fd = sys.stdin.fileno()
-                old_settings = termios.tcgetattr(fd)
-                try:
-                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-                    new_filter = input("> ").strip()
-                finally:
-                    tty.setraw(fd)
-                    
+                new_filter = prompt_for_input("\nEnter company name to filter by (or press Enter to cancel):")
                 if new_filter:
                     current_company_filter = new_filter
                     # Reload all jobs and apply the filter
@@ -573,7 +957,7 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                     loader = LoadingIndicator(message="Reloading job listings...")
                     loader.start()
                     try:
-                        for job_id in job_ids[:min(limit * 2, len(job_ids))]:
+                        for job_id in job_ids[:min(limit * 3, len(job_ids))]:
                             job = get_story(job_id)
                             if job:
                                 company, position = extract_company_name(job.get('title', ''))
@@ -584,6 +968,14 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                         loader.stop()
                     
                     # Apply all filters
+                    if current_keywords and any(current_keywords):
+                        jobs = filter_jobs_by_keywords(
+                            jobs, 
+                            current_keywords, 
+                            match_all=current_match_all, 
+                            case_sensitive=case_sensitive
+                        )
+                        
                     if current_min_score is not None and current_min_score > 0:
                         jobs = [j for j in jobs if j.get('score', 0) >= current_min_score]
                         
@@ -605,27 +997,16 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
             except Exception as e:
                 if USE_COLORS:
                     print(colorize(f"\nError reading input: {e}", ColorScheme.ERROR))
+                    print(colorize("Press any key to continue...", ColorScheme.PROMPT))
                 else:
                     print(f"\nError reading input: {e}")
+                    print("Press any key to continue...")
+                read_key()  # Wait for keypress
                     
         elif key == 's':
             # Prompt for minimum score
-            if USE_COLORS:
-                print(colorize("\nEnter minimum score (or press Enter to cancel):", ColorScheme.PROMPT))
-            else:
-                print("\nEnter minimum score (or press Enter to cancel):")
-                
-            # Get user input for score
             try:
-                # Exit raw mode to get normal input behavior
-                fd = sys.stdin.fileno()
-                old_settings = termios.tcgetattr(fd)
-                try:
-                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-                    score_input = input("> ").strip()
-                finally:
-                    tty.setraw(fd)
-                    
+                score_input = prompt_for_input("\nEnter minimum score (or press Enter to cancel):")
                 if score_input:
                     try:
                         new_min_score = int(score_input)
@@ -637,7 +1018,7 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                             loader = LoadingIndicator(message="Reloading job listings...")
                             loader.start()
                             try:
-                                for job_id in job_ids[:min(limit * 2, len(job_ids))]:
+                                for job_id in job_ids[:min(limit * 3, len(job_ids))]:
                                     job = get_story(job_id)
                                     if job:
                                         company, position = extract_company_name(job.get('title', ''))
@@ -648,6 +1029,14 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                                 loader.stop()
                             
                             # Apply all filters
+                            if current_keywords and any(current_keywords):
+                                jobs = filter_jobs_by_keywords(
+                                    jobs, 
+                                    current_keywords, 
+                                    match_all=current_match_all, 
+                                    case_sensitive=case_sensitive
+                                )
+                            
                             jobs = [j for j in jobs if j.get('score', 0) >= current_min_score]
                             
                             if current_company_filter:
@@ -669,18 +1058,27 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
                     except ValueError:
                         if USE_COLORS:
                             print(colorize("\nInvalid number. Please enter a positive integer.", ColorScheme.ERROR))
+                            print(colorize("Press any key to continue...", ColorScheme.PROMPT))
                         else:
                             print("\nInvalid number. Please enter a positive integer.")
+                            print("Press any key to continue...")
+                        read_key()  # Wait for keypress
             except Exception as e:
                 if USE_COLORS:
                     print(colorize(f"\nError reading input: {e}", ColorScheme.ERROR))
+                    print(colorize("Press any key to continue...", ColorScheme.PROMPT))
                 else:
                     print(f"\nError reading input: {e}")
+                    print("Press any key to continue...")
+                read_key()  # Wait for keypress
                     
-        elif key == 'c' and (current_company_filter or (current_min_score is not None and current_min_score > 0)):
+        elif key == 'c' and (current_company_filter or 
+                           (current_min_score is not None and current_min_score > 0) or
+                           (current_keywords and any(current_keywords))):
             # Clear all filters
             current_company_filter = None
             current_min_score = None
+            current_keywords = []
             
             # Reload all jobs without filtering
             jobs = []
