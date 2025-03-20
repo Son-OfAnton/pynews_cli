@@ -66,13 +66,13 @@
 		{
 			"prompts": "Now add a feature to filter jobs by keywords.",
 			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
-			"choice": -2,
+			"choice": -1,
 			"gdrive": "",
 			"usecase": "initial_development",
 			"issue_type": "incorrect_bash_usage",
 			"issue_comment": "The issue can be found on page 55.",
 			"issue_source": "A temporary test_ask_stories.py file",
-			"comment": ""
+			"comment": "Bad formatting on both models."
 		}
 	]
 }
