@@ -1,0 +1,67 @@
+{
+	"uuid": "ba6696e9-8c27-4aa5-9081-d5755b5c5d4b",
+	"model": "83aa91117c2fac3e25a3757eaa59f29ed3aeaf4dd7d3d384c673086c321e0644",
+	"root_gdrive": "https://drive.google.com/drive/folders/1bCWBjvFr2sxvKi4CkrhZw1nnpHiVouYV?usp=sharing",
+	"workflow": "existing_codebase",
+	"codebase": {
+		"url": "https://github.com/mazulo/pynews_cli",
+		"description": "A CLI tool to read Hacker News stories."
+	},
+	"prompts": [
+    {
+      "prompts": "Implement a feature to display only the titles of the jobs from HackerNews.",
+			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
+			"choice": 2,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "incorrect_bash_usage",
+			"issue_comment": "The issue can be found on page 55.",
+			"issue_source": "A temporary test_ask_stories.py file",
+			"comment": "Although it fixed it laterm, model A incorrectly used the bash command `nano` in a non-visual envionrment. However, model B used the `cat` command everytime."
+		},
+    {
+      "prompts": "Now add a feature to show the date the job was posted.",
+			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
+			"choice": 1,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "incorrect_bash_usage",
+			"issue_comment": "The issue can be found on page 55.",
+			"issue_source": "A temporary test_ask_stories.py file",
+			"comment": "Although it fixed it laterm, model A incorrectly used the bash command `nano` in a non-visual envionrment. However, model B used the `cat` command everytime."
+		},
+    {
+      "prompts": "Now, implement a feature where the company that posted the jobs will be seen.",
+			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
+			"choice": -2,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "incorrect_bash_usage",
+			"issue_comment": "The issue can be found on page 55.",
+			"issue_source": "A temporary test_ask_stories.py file",
+      "comment": "Failing tests too many of them."
+		},
+    {
+      "prompts": "Now, add a feature where the score for each job is seen.",
+			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "incorrect_bash_usage",
+			"issue_comment": "The issue can be found on page 55.",
+			"issue_source": "A temporary test_ask_stories.py file",
+      "comment": ""
+		},
+    {
+      "prompts": "Implement a feature to navigate through the list of jobs using arrow keys.",
+			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
+			"choice": -2,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "incorrect_bash_usage",
+			"issue_comment": "The issue can be found on page 55.",
+			"issue_source": "A temporary test_ask_stories.py file",
+      "comment": ""
+		}
+  ]
+}

@@ -10,6 +10,7 @@ from .parser import get_parser_options
 from .utils import create_list_stories, create_menu, get_stories, filter_stories_by_keywords
 from .comments import display_comments_for_story
 from .ask_view import display_ask_story_details, display_top_scored_ask_stories
+from .job_view import display_job_listings
 
 def handle_ask_story(story_id, page_size=10, width=80):
     """Handle detailed view of an Ask HN story with option to view comments."""
@@ -60,6 +61,10 @@ def handle_top_ask_stories(limit=10, min_score=0, sort_by_comments=False, sort_b
             if story_result and story_result.get('action') == 'view_comments':
                 display_comments_for_story(result.get('id'), page_size=page_size, width=width)
 
+def handle_job_stories(limit=20, page_size=10):
+    """Handle the display of job listings."""
+    display_job_listings(limit=limit, page_size=page_size)
+
 def main():
     """Main entry point for the script."""
     options = get_parser_options()
@@ -108,6 +113,17 @@ def main():
             print("\nOperation cancelled by user.")
         return 0
     
+    # Handle job stories if requested
+    if options.job_stories:
+        try:
+            handle_job_stories(
+                limit=options.job_stories,
+                page_size=options.page_size
+            )
+        except KeyboardInterrupt:
+            print("\nOperation cancelled by user.")
+        return 0
+    
     # Default behavior for story listing
     if options.top_stories:
         param = options.top_stories, "top"
@@ -116,7 +132,7 @@ def main():
     elif options.ask_stories:
         param = options.ask_stories, "ask"
     else:
-        print("Please specify either --top-stories, --news-stories, --ask-stories, --ask-top, --ask-discussed, --ask-recent, --ask-search, or --comments")
+        print("Please specify either --top-stories, --news-stories, --ask-stories, --job-stories, --ask-top, --ask-discussed, --ask-recent, --ask-search, or --comments")
         return 1
 
     list_data = None

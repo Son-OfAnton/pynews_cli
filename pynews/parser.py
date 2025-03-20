@@ -13,6 +13,7 @@ def get_parser_options() -> argparse.Namespace:
             Usage: pynews [-t/--top-stories number_of_stories]
                           [-n/--news-stories number_of_stories]
                           [-a/--ask-stories number_of_stories]
+                          [-j/--job-stories number_of_stories]
                           [-c/--comments story_id]
                           [-d/--ask-details story_id]
                           [--ask-top number_of_stories]
@@ -38,6 +39,11 @@ def get_parser_options() -> argparse.Namespace:
                 $ pynews -a 10 # or
                 $ pynews --ask-stories 10
                 This will show the 10 latest Ask HN stories with scores and comment counts.
+                
+            - Get Job Listings:
+                $ pynews -j 20 # or
+                $ pynews --job-stories 20
+                This will show the 20 latest job listings from Hacker News.
             
             - Filter Ask HN Stories by keyword:
                 $ pynews -a 10 --keyword "python"
@@ -114,6 +120,15 @@ def get_parser_options() -> argparse.Namespace:
         const=200,
         type=int,
         help="Get the N latest Ask HN stories from HackerNews API",
+    )
+    
+    parser.add_argument(
+        "-j",
+        "--job-stories",
+        nargs="?",
+        const=20,
+        type=int,
+        help="Get the N latest job listings from HackerNews API",
     )
     
     parser.add_argument(
