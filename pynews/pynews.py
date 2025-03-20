@@ -61,9 +61,29 @@ def handle_top_ask_stories(limit=10, min_score=0, sort_by_comments=False, sort_b
             if story_result and story_result.get('action') == 'view_comments':
                 display_comments_for_story(result.get('id'), page_size=page_size, width=width)
 
-def handle_job_stories(limit=20, page_size=10):
-    """Handle the display of job listings."""
-    display_job_listings(limit=limit, page_size=page_size)
+def handle_job_stories(limit=20, page_size=10, keywords=None, match_all=False, case_sensitive=False,
+                      sort_by_score=False, newest_first=True):
+    """
+    Handle the display of job listings with filtering and sorting options.
+    
+    Args:
+        limit: Maximum number of jobs to fetch
+        page_size: Number of jobs to display per page
+        keywords: List of keywords to filter by
+        match_all: If True, all keywords must match; if False, any keyword can match
+        case_sensitive: Whether keyword search should be case-sensitive
+        sort_by_score: Whether to sort by score instead of date
+        newest_first: Whether to sort newest first (when sorting by date)
+    """
+    display_job_listings(
+        limit=limit,
+        page_size=page_size,
+        sort_newest_first=newest_first,
+        sort_by_score=sort_by_score,
+        keywords=keywords,
+        match_all=match_all,
+        case_sensitive=case_sensitive
+    )
 
 def main():
     """Main entry point for the script."""
@@ -118,7 +138,12 @@ def main():
         try:
             handle_job_stories(
                 limit=options.job_stories,
-                page_size=options.page_size
+                page_size=options.page_size,
+                keywords=options.job_keyword,
+                match_all=options.match_all,
+                case_sensitive=options.case_sensitive,
+                sort_by_score=options.job_sort_by_score,
+                newest_first=not options.job_oldest_first
             )
         except KeyboardInterrupt:
             print("\nOperation cancelled by user.")

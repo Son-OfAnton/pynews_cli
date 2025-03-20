@@ -17,7 +17,7 @@
 			"issue_type": "incorrect_bash_usage",
 			"issue_comment": "The issue can be found on page 55.",
 			"issue_source": "A temporary test_ask_stories.py file",
-			"comment": "Although it fixed it laterm, model A incorrectly used the bash command `nano` in a non-visual envionrment. However, model B used the `cat` command everytime."
+			"comment": "Although it fixed it later, model A incorrectly used the bash command `nano` in a non-visual envionrment. However, model B used the `cat` command everytime."
 		},
 		{
 			"prompts": "Now add a feature to show the date the job was posted.",
@@ -69,10 +69,32 @@
 			"choice": -1,
 			"gdrive": "",
 			"usecase": "initial_development",
-			"issue_type": "incorrect_bash_usage",
+			"issue_type": "tool_issue",
 			"issue_comment": "The issue can be found on page 55.",
 			"issue_source": "A temporary test_ask_stories.py file",
-			"comment": "Bad formatting on both models."
+			"comment": "Both responses are cut off and I couldn't see the full response."
+		},
+    {
+			"prompts": "Now add a feature to filter jobs by keywords. Please include the full response.",
+			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "memory_issue",
+			"issue_comment": "The issue can be found on page 55.",
+			"issue_source": "A temporary test_ask_stories.py file",
+			"comment": "Both models used inexisting function named `display_jobs_with_navigation` on `job_view.py` file."
+		},
+    {
+			"prompts": "Please work on the following files. Implement a feature to filter jobs by keyword. Return a response too.",
+			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "memory_issue",
+			"issue_comment": "The issue can be found on page 55.",
+			"issue_source": "A temporary test_ask_stories.py file",
+			"comment": "Both models used inexisting function named `display_jobs_with_navigation` on `job_view.py` file."
 		}
 	]
 }

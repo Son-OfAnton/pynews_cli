@@ -20,8 +20,9 @@ def get_parser_options() -> argparse.Namespace:
                           [--ask-discussed number_of_stories]
                           [--ask-recent number_of_stories]
                           [--keyword "search term"]
+                          [--job-keyword "search term"]
 
-            If the number of stories is not supplied, will be showed 200 from the
+            If the number of stories is not supplied, will be showed a default number from the
             500 stories.
 
             Examples:
@@ -39,11 +40,23 @@ def get_parser_options() -> argparse.Namespace:
                 $ pynews -a 10 # or
                 $ pynews --ask-stories 10
                 This will show the 10 latest Ask HN stories with scores and comment counts.
-                
+            
             - Get Job Listings:
                 $ pynews -j 20 # or
                 $ pynews --job-stories 20
                 This will show the 20 latest job listings from Hacker News.
+                
+            - Filter Jobs by Keyword:
+                $ pynews -j --job-keyword "python"
+                This will show job listings containing "python".
+                
+            - Filter Jobs with Multiple Keywords:
+                $ pynews -j --job-keyword "python" "remote"
+                This will show job listings containing either "python" OR "remote".
+                
+            - Filter Jobs Requiring ALL Keywords:
+                $ pynews -j --job-keyword "python" "senior" --match-all
+                This will show job listings containing BOTH "python" AND "senior".
             
             - Filter Ask HN Stories by keyword:
                 $ pynews -a 10 --keyword "python"
@@ -132,6 +145,25 @@ def get_parser_options() -> argparse.Namespace:
     )
     
     parser.add_argument(
+        "--job-keyword",
+        nargs="+",
+        metavar="KEYWORD",
+        help="Filter job listings by keyword(s)",
+    )
+    
+    parser.add_argument(
+        "--job-sort-by-score",
+        action="store_true",
+        help="Sort job listings by score instead of date",
+    )
+    
+    parser.add_argument(
+        "--job-oldest-first",
+        action="store_true",
+        help="Show oldest job listings first (default is newest first)",
+    )
+    
+    parser.add_argument(
         "--ask-top",
         nargs="?",
         const=10,
@@ -185,7 +217,7 @@ def get_parser_options() -> argparse.Namespace:
         "--min-score",
         type=int,
         default=0,
-        help="Minimum score threshold for Ask HN stories (used with --ask-top)",
+        help="Minimum score threshold for stories",
     )
     
     parser.add_argument(
@@ -251,7 +283,7 @@ def get_parser_options() -> argparse.Namespace:
         "--page-size",
         type=int,
         default=10,
-        help="Number of comments to display per page",
+        help="Number of items to display per page",
     )
     
     parser.add_argument(
