@@ -162,11 +162,11 @@ def display_poll_titles(limit=30, min_score=0, sort_by_comments=False, sort_by_t
             
             # Format the display
             if USE_COLORS:
-                idx_str = colorize(f"{start_idx + i}.", ColorScheme.INDEX)
+                idx_str = colorize(f"{start_idx + i}.", ColorScheme.INFO)
                 title_str = colorize(title, ColorScheme.TITLE)
                 score_str = colorize(f"{score} points", ColorScheme.POINTS)
                 author_str = colorize(f"by {author}", ColorScheme.AUTHOR)
-                comments_str = colorize(f"{comment_count} comments", ColorScheme.COMMENTS)
+                comments_str = colorize(f"{comment_count} comments", ColorScheme.COUNT)
                 time_str = colorize(time_ago, ColorScheme.TIME)
             else:
                 idx_str = f"{start_idx + i}."
@@ -252,7 +252,7 @@ def display_poll_details(poll_id):
             print(colorize("=" * 40, Colors.BRIGHT_BLUE))
             print(colorize(f"Posted by: {author}", ColorScheme.AUTHOR))
             print(colorize(f"Score: {score} points", ColorScheme.POINTS))
-            print(colorize(f"Comments: {comment_count}", ColorScheme.COMMENTS))
+            print(colorize(f"Comments: {comment_count}", ColorScheme.COUNT))
             print(colorize(f"Posted on: {timestamp}", ColorScheme.TIME))
         else:
             print("=" * 40)
@@ -277,7 +277,7 @@ def display_poll_details(poll_id):
                     option_text = clean_text(option_text)
                     
                     if USE_COLORS:
-                        print(colorize(f"{i}. {option_text} - {option_score} votes", ColorScheme.OPTION))
+                        print(colorize(f"{i}. {option_text} - {option_score} votes", ColorScheme.INFO))
                     else:
                         print(f"{i}. {option_text} - {option_score} votes")
         else:

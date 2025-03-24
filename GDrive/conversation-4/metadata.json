@@ -12,18 +12,18 @@
 			"prompts": "Implement a feature that retrieves poll post titles from Hacker News.",
 			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
 			"choice": -1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1-IvwyGotvCDxT1QLc-27fRsuLKI-_O87/view?usp=drive_link",
 			"usecase": "initial_development",
 			"issue_type": "incorrect_bash_usage",
-      "issue_comment": "",
-      "issue_source": "",
-      "comment": "Conflicting bash commands in the script with same `-p` flag for pages and polls."
+      "issue_comment": "Conflicting bash commands in the script with same `-p` flag for pages and polls.",
+      "issue_source": "The is found on pages 15, 17, and 37.",
+      "comment": "The issue is found on both models."
 		},
 		{
 			"prompts": "There are conflicting `-p` flags used for pages and polls in parser.py file.",
 			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
 			"choice": -1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/17Dotc2wJp3gcrOPtYgg2v-VVqN4tFY8S/view?usp=drive_link",
 			"usecase": "debugging_fixes",
 			"issue_type": "",
       "issue_comment": "",
@@ -34,12 +34,56 @@
 			"prompts": "An `AttributeError: type object 'ColorScheme' has no attribute 'COMMENTS'` error is raised from `pynews.py` file while fetching a single poll. Please fix the issue.",
 			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
 			"choice": -1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1zZtP3mbreON8V7jo9lsx_RXglpaQFAGO/view?usp=drive_link",
 			"usecase": "debugging_fixes",
 			"issue_type": "",
       "issue_comment": "",
       "issue_source": "",
-      "comment": "Both models fixed the Bash command flag conflicting issue."
+      "comment": "Both models fixed the attribute error bug."
+		},
+		{
+			"prompts": "Implement a feature to show the poll author along side the poll.",
+			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
+			"choice": -1,
+			"gdrive": "https://drive.google.com/file/d/1zA9_6Q8jWj6d9Dcv9qbD5yREffrSR90W/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "",
+      "issue_comment": "",
+      "issue_source": "",
+      "comment": "Both models added a feature that shows the poll author."
+		},
+		{
+			"prompts": "Implement a feature to show the number of votes for each poll.",
+			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
+			"choice": 1,
+			"gdrive": "https://drive.google.com/file/d/1x7TySePxrJdG_MBepTLrBoSfAu1b8TTj/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "",
+      "issue_comment": "",
+      "issue_source": "",
+      "comment": "Both models added a feature that shows the number of votes for each poll."
+		},
+		{
+			"prompts": "Add a feature to show all poll options with their respective scores.",
+			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
+			"choice": -1,
+			"gdrive": "https://drive.google.com/file/d/1wKFIBKucZnDUXdZhg5HIGSaFcStQKQfA/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "",
+      "issue_comment": "",
+      "issue_source": "",
+      "comment": "Both models added a feature that shows all poll options with their respective scores."
+		},
+		{
+			"prompts": "Please run all the Bash commands related to polls to check the functionalities.",
+			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
+			"choice": 1,
+			"gdrive": "https://drive.google.com/file/d/1L-UpXmT8apcCQiEk_7H63WdiOJUzZncu/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "missing_memory",
+      "issue_comment": "Both models hallucinated and exhibited memory issue trying to access a non-existent file named `poll_view_options.py`.",
+      "issue_source": "The is found on pages 3 and 20.",
+			"comment": "Both models resulted relatively the same code and same bug."
 		}
   ]
 }
