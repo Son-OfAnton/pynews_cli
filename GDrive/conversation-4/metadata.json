@@ -1,0 +1,45 @@
+{
+	"uuid": "3682a631-a8a7-415f-b3e8-cf1e889ded4a",
+	"model": "83aa91117c2fac3e25a3757eaa59f29ed3aeaf4dd7d3d384c673086c321e0644",
+	"root_gdrive": "https://drive.google.com/drive/folders/1bCWBjvFr2sxvKi4CkrhZw1nnpHiVouYV?usp=sharing",
+	"workflow": "existing_codebase",
+	"codebase": {
+		"url": "https://github.com/mazulo/pynews_cli",
+		"description": "A CLI tool to read Hacker News stories."
+	},
+	"prompts": [
+    {
+			"prompts": "Implement a feature that retrieves poll post titles from Hacker News.",
+			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "incorrect_bash_usage",
+      "issue_comment": "",
+      "issue_source": "",
+      "comment": "Conflicting bash commands in the script with same `-p` flag for pages and polls."
+		},
+		{
+			"prompts": "There are conflicting `-p` flags used for pages and polls in parser.py file.",
+			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "",
+      "issue_comment": "",
+      "issue_source": "",
+      "comment": "Both models fixed the Bash command flag conflicting issue."
+		},
+		{
+			"prompts": "An `AttributeError: type object 'ColorScheme' has no attribute 'COMMENTS'` error is raised from `pynews.py` file while fetching a single poll. Please fix the issue.",
+			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "",
+      "issue_comment": "",
+      "issue_source": "",
+      "comment": "Both models fixed the Bash command flag conflicting issue."
+		}
+  ]
+}

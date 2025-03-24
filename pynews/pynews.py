@@ -11,6 +11,64 @@ from .utils import create_list_stories, create_menu, get_stories, filter_stories
 from .comments import display_comments_for_story
 from .ask_view import display_ask_story_details, display_top_scored_ask_stories
 from .job_view import display_job_listings
+from .poll_view import display_poll_titles, display_poll_details
+
+def handle_poll_details(poll_id, page_size=10, width=80):
+    """Handle detailed view of a poll with option to view comments."""
+    result = display_poll_details(poll_id)
+    
+    # Check if user wants to view comments
+    if result and result.get('action') == 'view_comments':
+        display_comments_for_story(poll_id, page_size=page_size, width=width)
+    
+    # Return to main menu otherwise
+
+def handle_poll_list(limit=10, min_score=0, sort_by_comments=False, sort_by_time=False, 
+                     keywords=None, match_all=False, case_sensitive=False,
+                     page_size=10, width=80):
+    """Handle the display of poll questions with navigation options."""
+    while True:
+        result = display_poll_titles(
+            limit=limit,
+            min_score=min_score,
+            sort_by_comments=sort_by_comments,
+            sort_by_time=sort_by_time,
+            keywords=keywords,
+            match_all=match_all,
+            case_sensitive=case_sensitive,
+            page_size=page_size
+        )
+        
+        if not result or result.get('action') == 'return_to_menu':
+            break
+            
+        if result.get('action') == 'change_sort':
+            # Change the sorting mode
+            sort_type = result.get('sort_type', 'score')
+            if sort_type == 'comments':
+                sort_by_comments = True
+                sort_by_time = False
+            elif sort_type == 'time':
+                sort_by_comments = False
+                sort_by_time = True
+            else:  # score
+                sort_by_comments = False
+                sort_by_time = False
+            continue
+        
+        if result.get('action') == 'view_poll':
+            poll_result = display_poll_details(result.get('id'))
+            
+            # Check if user wants to view comments from the poll view
+            if poll_result and poll_result.get('action') == 'view_comments':
+                display_comments_for_story(result.get('id'), page_size=page_size, width=width)
+                
+            # If the user wants to return to the list, continue the loop
+            if poll_result and poll_result.get('action') != 'return_to_menu':
+                continue
+            # If the user wants to return to the main menu, break the loop
+            else:
+                break
 
 def handle_ask_story(story_id, page_size=10, width=80):
     """Handle detailed view of an Ask HN story with option to view comments."""
@@ -115,6 +173,36 @@ def main():
             print("\nOperation cancelled by user.")
         return 0
     
+    # Handle poll details if requested
+    if options.poll_details:
+        try:
+            handle_poll_details(
+                options.poll_details,
+                page_size=options.page_size,
+                width=options.width
+            )
+        except KeyboardInterrupt:
+            print("\nOperation cancelled by user.")
+        return 0
+    
+    # Handle poll stories if requested
+    if options.poll_stories:
+        try:
+            handle_poll_list(
+                limit=options.poll_stories,
+                min_score=options.min_score,
+                sort_by_comments=options.sort_by_comments,
+                sort_by_time=options.sort_by_time,
+                keywords=options.poll_keyword,
+                match_all=options.match_all,
+                case_sensitive=options.case_sensitive,
+                page_size=options.page_size,
+                width=options.width
+            )
+        except KeyboardInterrupt:
+            print("\nOperation cancelled by user.")
+        return 0
+    
     # Handle top-scored Ask HN stories if requested
     if options.ask_top:
         try:
@@ -157,7 +245,7 @@ def main():
     elif options.ask_stories:
         param = options.ask_stories, "ask"
     else:
-        print("Please specify either --top-stories, --news-stories, --ask-stories, --job-stories, --ask-top, --ask-discussed, --ask-recent, --ask-search, or --comments")
+        print("Please specify either --top-stories, --news-stories, --ask-stories, --job-stories, --poll-stories, --ask-top, --ask-discussed, --ask-recent, --ask-search, --poll-top, --poll-discussed, --poll-recent, or --comments")
         return 1
 
     list_data = None

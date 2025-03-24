@@ -14,13 +14,18 @@ def get_parser_options() -> argparse.Namespace:
                           [-n/--news-stories number_of_stories]
                           [-a/--ask-stories number_of_stories]
                           [-j/--job-stories number_of_stories]
+                          [--poll-stories number_of_stories]
                           [-c/--comments story_id]
                           [-d/--ask-details story_id]
                           [--ask-top number_of_stories]
                           [--ask-discussed number_of_stories]
                           [--ask-recent number_of_stories]
+                          [--poll-top number_of_stories]
+                          [--poll-discussed number_of_stories]
+                          [--poll-recent number_of_stories]
                           [--keyword "search term"]
                           [--job-keyword "search term"]
+                          [--poll-keyword "search term"]
 
             If the number of stories is not supplied, will be showed a default number from the
             500 stories.
@@ -45,6 +50,30 @@ def get_parser_options() -> argparse.Namespace:
                 $ pynews -j 20 # or
                 $ pynews --job-stories 20
                 This will show the 20 latest job listings from Hacker News.
+                
+            - Get Poll Questions:
+                $ pynews --poll-stories 10
+                This will show the 10 latest poll questions with options.
+                
+            - Get Top-Scored Poll Questions:
+                $ pynews --poll-top 10
+                This will show the 10 highest-scoring poll questions.
+                
+            - Get Most-Discussed Poll Questions:
+                $ pynews --poll-discussed 10
+                This will show the 10 poll questions with the most comments.
+                
+            - Get Most Recent Poll Questions:
+                $ pynews --poll-recent 10
+                This will show the 10 most recent poll questions.
+                
+            - Filter Polls by Keyword:
+                $ pynews --poll-stories --poll-keyword "python"
+                This will show poll questions containing "python".
+                
+            - View Poll Details:
+                $ pynews --poll-details 12345
+                This will show details for a poll with ID 12345, including all options.
                 
             - Filter Jobs by Keyword:
                 $ pynews -j --job-keyword "python"
@@ -101,7 +130,7 @@ def get_parser_options() -> argparse.Namespace:
                 This will show details for an Ask HN story with author, score, and comment count.
                 
             - Control Comment Pagination:
-                $ pynews -c 12345 -p 15 --page 2
+                $ pynews -c 12345 --page-size 15 --page 2
                 This will show the second page of comments (15 per page).
 
             Get basic options and Help, use: -h\--help
@@ -142,6 +171,51 @@ def get_parser_options() -> argparse.Namespace:
         const=20,
         type=int,
         help="Get the N latest job listings from HackerNews API",
+    )
+    
+    parser.add_argument(
+        "--poll-stories",
+        nargs="?",
+        const=20,
+        type=int,
+        help="Get the N latest poll questions from HackerNews API",
+    )
+    
+    parser.add_argument(
+        "--poll-keyword",
+        nargs="+",
+        metavar="KEYWORD",
+        help="Filter poll questions by keyword(s)",
+    )
+    
+    parser.add_argument(
+        "--poll-details",
+        type=int,
+        help="View details of a poll with the given ID",
+    )
+    
+    parser.add_argument(
+        "--poll-top",
+        nargs="?",
+        const=10,
+        type=int,
+        help="Get the N highest-scoring poll questions",
+    )
+    
+    parser.add_argument(
+        "--poll-discussed",
+        nargs="?",
+        const=10,
+        type=int,
+        help="Get the N most commented poll questions",
+    )
+    
+    parser.add_argument(
+        "--poll-recent",
+        nargs="?",
+        const=10,
+        type=int,
+        help="Get the N most recent poll questions",
     )
     
     parser.add_argument(
@@ -279,7 +353,6 @@ def get_parser_options() -> argparse.Namespace:
     )
     
     parser.add_argument(
-        "-p",
         "--page-size",
         type=int,
         default=10,
@@ -317,5 +390,17 @@ def get_parser_options() -> argparse.Namespace:
     if options.ask_search:
         options.keyword = options.ask_search
         options.ask_stories = 200  # Default to a larger set for searching
+    
+    # Handle poll-specific options
+    if options.poll_discussed:
+        options.sort_by_comments = True
+        options.poll_stories = options.poll_discussed
+    
+    if options.poll_recent:
+        options.sort_by_time = True
+        options.poll_stories = options.poll_recent
+    
+    if options.poll_top:
+        options.poll_stories = options.poll_top
         
     return options

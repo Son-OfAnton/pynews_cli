@@ -1,3 +1,4 @@
+import html
 import random
 import sys
 import datetime
@@ -467,3 +468,37 @@ def get_user_stories(username, story_type='submitted'):
     except Exception as e:
         print(f"Error fetching user data: {e}")
         return []
+    
+def clean_text(text):
+    """
+    Clean HTML from text and convert to plain text.
+    
+    Args:
+        text: HTML text to clean
+        
+    Returns:
+        Cleaned plain text
+    """
+    if not text:
+        return ""
+    
+    # Decode HTML entities
+    text = html.unescape(text)
+    
+    # Replace some HTML tags with plain text alternatives
+    text = text.replace('<p>', '\n\n')
+    text = text.replace('<i>', '_').replace('</i>', '_')
+    text = text.replace('<b>', '*').replace('</b>', '*')
+    text = text.replace('<code>', '`').replace('</code>', '`')
+    text = text.replace('<pre>', '\n```\n').replace('</pre>', '\n```\n')
+    
+    # Remove other HTML tags
+    while '<' in text and '>' in text:
+        start = text.find('<')
+        end = text.find('>', start)
+        if start != -1 and end != -1:
+            text = text[:start] + text[end+1:]
+        else:
+            break
+    
+    return text.strip()
