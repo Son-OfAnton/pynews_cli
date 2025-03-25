@@ -23,6 +23,9 @@ def get_parser_options() -> argparse.Namespace:
                           [--poll-top number_of_stories]
                           [--poll-discussed number_of_stories]
                           [--poll-recent number_of_stories]
+                          [--user USERNAME]
+                          [--list-users]
+                          [--user-search]
                           [--keyword "search term"]
                           [--job-keyword "search term"]
                           [--poll-keyword "search term"]
@@ -74,6 +77,18 @@ def get_parser_options() -> argparse.Namespace:
             - View Poll Details:
                 $ pynews --poll-details 12345
                 This will show details for a poll with ID 12345, including all options.
+                
+            - Get HackerNews User Profile:
+                $ pynews --user "username"
+                This will show detailed information about a HackerNews user.
+                
+            - List Random HackerNews Users:
+                $ pynews --list-users
+                This will display a list of random HackerNews users to explore.
+                
+            - Search for a HackerNews User:
+                $ pynews --user-search
+                This will provide an interactive prompt to search for users.
                 
             - Filter Jobs by Keyword:
                 $ pynews -j --job-keyword "python"
@@ -216,6 +231,24 @@ def get_parser_options() -> argparse.Namespace:
         const=10,
         type=int,
         help="Get the N most recent poll questions",
+    )
+    
+    parser.add_argument(
+        "--user",
+        metavar="USERNAME",
+        help="View information about a specific HackerNews user",
+    )
+    
+    parser.add_argument(
+        "--list-users",
+        action="store_true",
+        help="List random HackerNews users and view their profiles",
+    )
+    
+    parser.add_argument(
+        "--user-search",
+        action="store_true",
+        help="Search for a specific HackerNews user",
     )
     
     parser.add_argument(

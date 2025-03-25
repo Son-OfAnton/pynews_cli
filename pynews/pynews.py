@@ -12,6 +12,43 @@ from .comments import display_comments_for_story
 from .ask_view import display_ask_story_details, display_top_scored_ask_stories
 from .job_view import display_job_listings
 from .poll_view import display_poll_titles, display_poll_details
+from .user_view import display_user, search_user, list_users
+
+def handle_user_profile(username):
+    """Handle displaying a specific user's profile."""
+    try:
+        result = display_user(username)
+        return 0
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.")
+        return 0
+    except Exception as e:
+        print(f"\nError displaying user profile: {e}")
+        return 1
+
+def handle_user_search():
+    """Handle user search functionality."""
+    try:
+        result = search_user()
+        return 0
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.")
+        return 0
+    except Exception as e:
+        print(f"\nError with user search: {e}")
+        return 1
+
+def handle_user_list():
+    """Handle listing random users."""
+    try:
+        result = list_users()
+        return 0
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.")
+        return 0
+    except Exception as e:
+        print(f"\nError listing users: {e}")
+        return 1
 
 def handle_poll_details(poll_id, page_size=10, width=80):
     """Handle detailed view of a poll with option to view comments."""
@@ -147,6 +184,16 @@ def main():
     """Main entry point for the script."""
     options = get_parser_options()
     
+    # Handle user features first
+    if options.user:
+        return handle_user_profile(options.user)
+        
+    if options.user_search:
+        return handle_user_search()
+        
+    if options.list_users:
+        return handle_user_list()
+    
     # Handle comment viewing if requested
     if options.comments:
         # The display_comments_for_story function now handles pagination and navigation internally
@@ -245,7 +292,7 @@ def main():
     elif options.ask_stories:
         param = options.ask_stories, "ask"
     else:
-        print("Please specify either --top-stories, --news-stories, --ask-stories, --job-stories, --poll-stories, --ask-top, --ask-discussed, --ask-recent, --ask-search, --poll-top, --poll-discussed, --poll-recent, or --comments")
+        print("Please specify either --top-stories, --news-stories, --ask-stories, --job-stories, --poll-stories, --ask-top, --ask-discussed, --ask-recent, --ask-search, --poll-top, --poll-discussed, --poll-recent, --comments, --user, --list-users, or --user-search")
         return 1
 
     list_data = None
