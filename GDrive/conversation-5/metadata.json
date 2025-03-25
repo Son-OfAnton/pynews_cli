@@ -10,12 +10,45 @@
 	"prompts": [
     {
 			"prompt": "Create a feature to fetch HackerNews users names.",
-			"hfi_id": "7a2fa831-f442-4f35-9ae3-52f019fadf0d",
+			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
 			"choice": -2,
 			"gdrive": "",
 			"usecase": "initial_development",
 			"issue_type": "missing_memory",
       "issue_comment": "Error output",
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+			"prompt": "Create a feature to fetch Karma of a user.",
+			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
+			"choice": 2,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "missing_memory",
+      "issue_comment": "Model A has shell command timout error",
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+			"prompt": "Create a feature to show account creation date for a specific user.",
+			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "missing_memory",
+      "issue_comment": "",
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+			"prompt": "Implement a feature to fetch all the stories submited by a user.",
+			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "missing_memory",
+      "issue_comment": "model A's options are not working. Model B is experiencing an import error in `pynews.py` while importing `display_user`",
       "issue_source": "",
       "comment": ""
 		}
