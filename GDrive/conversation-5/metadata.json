@@ -51,6 +51,17 @@
       "issue_comment": "model A's options are not working. Model B is experiencing an import error in `pynews.py` while importing `display_user`",
       "issue_source": "",
       "comment": ""
+		},
+    {
+			"prompt": "The options to `k`, `c`, `s` to see karma, creation date, and stories of user don't work. When these options are pressed the terminal exits.",
+			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
+			"choice": 4,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "missing_memory",
+      "issue_comment": "Model A has shell command timout error. On top of that it could not fix the issue with the options.",
+      "issue_source": "",
+      "comment": ""
 		}
   ]
 }

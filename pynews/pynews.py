@@ -12,18 +12,95 @@ from .comments import display_comments_for_story
 from .ask_view import display_ask_story_details, display_top_scored_ask_stories
 from .job_view import display_job_listings
 from .poll_view import display_poll_titles, display_poll_details
-from .user_view import display_user, search_user, list_users
+from .user_view import (display_user, search_user, list_users, display_karma, 
+                        display_created_date, display_user_stories)
 
 def handle_user_profile(username):
     """Handle displaying a specific user's profile."""
     try:
         result = display_user(username)
+        
+        # Process any chained actions from the user profile
+        if result and result.get('action') == 'view_karma':
+            return handle_user_karma(result.get('username'))
+        elif result and result.get('action') == 'view_created':
+            return handle_user_created_date(result.get('username'))
+        elif result and result.get('action') == 'view_stories':
+            return handle_user_stories(result.get('username'))
+        
         return 0
     except KeyboardInterrupt:
         print("\nOperation cancelled by user.")
         return 0
     except Exception as e:
         print(f"\nError displaying user profile: {e}")
+        return 1
+
+def handle_user_karma(username):
+    """Handle displaying a user's karma."""
+    try:
+        result = display_karma(username)
+        
+        # Process any chained actions from the karma view
+        if result and result.get('action') == 'view_profile':
+            return handle_user_profile(result.get('username'))
+        elif result and result.get('action') == 'view_created':
+            return handle_user_created_date(result.get('username'))
+        elif result and result.get('action') == 'view_stories':
+            return handle_user_stories(result.get('username'))
+        
+        return 0
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.")
+        return 0
+    except Exception as e:
+        print(f"\nError displaying user karma: {e}")
+        return 1
+
+def handle_user_created_date(username):
+    """Handle displaying a user's account creation date."""
+    try:
+        result = display_created_date(username)
+        
+        # Process any chained actions from the creation date view
+        if result and result.get('action') == 'view_profile':
+            return handle_user_profile(result.get('username'))
+        elif result and result.get('action') == 'view_karma':
+            return handle_user_karma(result.get('username'))
+        elif result and result.get('action') == 'view_stories':
+            return handle_user_stories(result.get('username'))
+        
+        return 0
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.")
+        return 0
+    except Exception as e:
+        print(f"\nError displaying user creation date: {e}")
+        return 1
+
+def handle_user_stories(username):
+    """Handle displaying a user's submitted stories."""
+    try:
+        result = display_user_stories(username)
+        
+        # Process any chained actions from the stories view
+        if result and result.get('action') == 'view_profile':
+            return handle_user_profile(result.get('username'))
+        elif result and result.get('action') == 'view_karma':
+            return handle_user_karma(result.get('username'))
+        elif result and result.get('action') == 'view_created':
+            return handle_user_created_date(result.get('username'))
+        elif result and result.get('action') == 'view_comments':
+            display_comments_for_story(result.get('story_id'))
+            # After viewing comments, go back to stories
+            return handle_user_stories(username)
+        
+        return 0
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.")
+        return 0
+    except Exception as e:
+        print(f"\nError displaying user stories: {e}")
         return 1
 
 def handle_user_search():
@@ -193,6 +270,15 @@ def main():
         
     if options.list_users:
         return handle_user_list()
+        
+    if options.user_karma:
+        return handle_user_karma(options.user_karma)
+        
+    if options.user_created:
+        return handle_user_created_date(options.user_created)
+        
+    if options.user_stories:
+        return handle_user_stories(options.user_stories)
     
     # Handle comment viewing if requested
     if options.comments:
@@ -292,7 +378,7 @@ def main():
     elif options.ask_stories:
         param = options.ask_stories, "ask"
     else:
-        print("Please specify either --top-stories, --news-stories, --ask-stories, --job-stories, --poll-stories, --ask-top, --ask-discussed, --ask-recent, --ask-search, --poll-top, --poll-discussed, --poll-recent, --comments, --user, --list-users, or --user-search")
+        print("Please specify either --top-stories, --news-stories, --ask-stories, --job-stories, --poll-stories, --ask-top, --ask-discussed, --ask-recent, --ask-search, --poll-top, --poll-discussed, --poll-recent, --comments, --user, --list-users, --user-search, --user-karma, --user-created, or --user-stories")
         return 1
 
     list_data = None
