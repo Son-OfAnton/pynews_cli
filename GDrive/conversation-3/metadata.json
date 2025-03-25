@@ -9,114 +9,114 @@
 	},
 	"prompts": [
 		{
-			"prompts": "Implement a feature to display only the titles of the jobs from HackerNews.",
+			"prompt": "Implement a feature to display only the titles of the jobs from HackerNews.",
 			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
 			"choice": 2,
 			"gdrive": "https://drive.google.com/file/d/18ReLuDhJxjx0grg3a603PoHF8RyVdrMw/view?usp=drive_link",
 			"usecase": "initial_development",
 			"issue_type": "incorrect_bash_usage",
-			"issue_comment": "The issue can be found on page 55.",
-			"issue_source": "A temporary test_ask_stories.py file",
-			"comment": "Although it fixed it later, model A incorrectly used the bash command `nano` in a non-visual envionrment. However, model B used the `cat` command everytime."
+			"issue_comment": "The issue can be found on page 55. Although it fixed it later, model A incorrectly used the bash command `nano` in a non-visual envionrment. However, model B used the `cat` command everytime.",
+			"issue_source": "pynews/test_ask_stories.py",
+			"comment": "Model B is better since it did not make a mistake in the bash command as model A did."
 		},
 		{
-			"prompts": "Now add a feature to show the date the job was posted.",
+			"prompt": "Now add a feature to show the date the job was posted.",
 			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
 			"choice": 1,
 			"gdrive": "https://drive.google.com/file/d/1VH-A_Szg2b-6WEq3xHudtdVXUyUluRHA/view?usp=drive_link",
 			"usecase": "feature_implementation",
-			"issue_type": "code_correctness",
-			"issue_comment": "The issue can be found on page 5.",
-			"issue_source": "pynews/job_view.py",
-			"comment": "Although it fixed it later, model A incorrectly used the bash command `nano` in a non-visual envionrment. However, model B used the `cat` command everytime."
+			"issue_type": "",
+			"issue_comment": "",
+			"issue_source": "",
+			"comment": ""
 		},
 		{
-			"prompts": "Now, implement a feature where the company that posted the jobs will be seen.",
+			"prompt": "Now, implement a feature where the company that posted the jobs will be seen.",
 			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
 			"choice": -2,
 			"gdrive": "https://drive.google.com/file/d/1jpdvVdjNrDxnbV9DxdS06-V_wGHzjJA1/view?usp=drive_link",
 			"usecase": "feature_implementation",
 			"issue_type": "code_correctness",
-			"issue_comment": "The issue can be found on page 55.",
-			"issue_source": "A temporary test_ask_stories.py file",
-			"comment": "Model B wrote test cases to test the feature but all of them are failing."
+			"issue_comment": "The issue can be found on page 55. Mode B wrote test cases to test the feature but all of them are failing.",
+			"issue_source": "pynews/test_ask_stories.py",
+			"comment": "Model A is better since its tests are not failing."
 		},
 		{
-			"prompts": "Now, add a feature where the score for each job is seen.",
+			"prompt": "Now, add a feature where the score for each job is seen.",
 			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/1Bt2SBdIS2E29F9F2dFnc1kmd7g99Nssk/view?usp=drive_link",
 			"usecase": "feature_implementation",
 			"issue_type": "code_correctness",
-			"issue_comment": "The issue can be found on page 33.",
+			"issue_comment": "The issue can be found on page 33. Model B made a logical error while extracting the score from the job data.",
 			"issue_source": "pynews/job_view_score.py",
-			"comment": "Model B made a logical error while extracting the score from the job data."
+			"comment": "Model A is better since it did not make a logical error as model B did."
 		},
 		{
-			"prompts": "Implement a feature to navigate through the list of jobs using arrow keys.",
+			"prompt": "Implement a feature to navigate through the list of jobs using arrow keys.",
 			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
 			"choice": -2,
 			"gdrive": "https://drive.google.com/file/d/15WVV6efGQ4SYpETEmGUFBv3Y6CxYVtd2/view?usp=drive_link",
 			"usecase": "feature_implementation",
 			"issue_type": "code_correctness",
-			"issue_comment": "The issue can be found on page 56.",
+			"issue_comment": "The issue can be found on page 56. Model B made a logical error while calculating the next job index.",
 			"issue_source": "pynews/job_view_arrow_keys.py",
-			"comment": "Model B made a logical error while calculating the next job index."
+			"comment": "Model A is better since it calculates the next job index correctly unlike model B."
 		},
 		{
-			"prompts": "Now add a feature to filter jobs by keywords.",
+			"prompt": "Now add a feature to filter jobs by keywords.",
 			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/1U5BD02i9wW4q3QVFes4_NkvBrhM1cvpW/view?usp=drive_link",
 			"usecase": "feature_implementation",
-			"issue_type": "tool_issue",
-			"issue_comment": "The issue can be found on page 28.",
+			"issue_type": "tool",
+			"issue_comment": "The issue can be found on page 28. Both responses are cut off and the full response is not provided.",
 			"issue_source": "pynews/job_view.py",
 			"comment": "Both responses are cut off and the full response is not provided."
 		},
     {
-			"prompts": "Now add a feature to filter jobs by keywords. Please include the full response.",
+			"prompt": "Now add a feature to filter jobs by keywords. Please include the full response.",
 			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/1ddCu-9SqX-TDoQ6KRMr-Y4yl1YxW3Kqq/view?usp=drive_link",
 			"usecase": "feature_implementation",
-			"issue_type": "memory_issue",
-			"issue_comment": "The issue can be found on page 11 and 20.",
-			"issue_source": "pynews/job_view.py",
-			"comment": "Both models used non-existing function named `display_jobs_with_navigation` on `job_view.py` file."
+			"issue_type": "tool",
+			"issue_comment": "Model B did not generate a response and took a long time to respond.",
+			"issue_source": "",
+			"comment": "Model A is better since it generated a response."
 		},
     {
-			"prompts": "Please work on the following files. Implement a feature to filter jobs by keyword. Return a response too.",
+			"prompt": "Please work on the following files. Implement a feature to filter jobs by keyword. Return a response too.",
 			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/1utUZvPxSpV6CbPeGBhgiHX_W7D2vUqZB/view?usp=drive_link",
 			"usecase": "debugging_fixes",
-			"issue_type": "tool_issue",
-			"issue_comment": "The issue can be found on page 89.",
+			"issue_type": "tool",
+			"issue_comment": "The issue can be found on page 89. Both models wrote incomplete code.",
 			"issue_source": "pynews/job_view.py",
-			"comment": "Both models wrote incomplete code."
+			"comment": "Both models wrote incomplete code. The preference of model A subjected to response quality."
 		},
     {
-			"prompts": "Fix a text formatting issue while printing on the terminal. Please return each file in one code block. Don't chop code snippets.",
+			"prompt": "Fix a text formatting issue while printing on the terminal. Please return each file in one code block. Don't chop code snippets.",
 			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/1fIO_AIsxKlHkqkOxaKABfHsCW4BJZVld/view?usp=drive_link",
 			"usecase": "debugging_fixes",
 			"issue_type": "code_correctness",
-			"issue_comment": "The issue can be found on page 71.",
+			"issue_comment": "The issue can be found on page 71. Both models failed to debug the issue.",
 			"issue_source": "pynews/job_view.py",
-      "comment": "Both models failed to debug the issue."
+      "comment": "Both models failed to debug the issue. The preference of model A subjected to response quality."
 		},
     {
-      "prompts": "The formatting issue still exists and it is affecting all features. Please focus solely on the formatting issue.",
+      "prompt": "The formatting issue still exists and it is affecting all features. Please focus solely on the formatting issue.",
 			"hfi_id": "4224e5a1-fd19-4088-9360-7036edf320f8",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/1tH6EPSzdgTzbSdp1xjXDx0C8UNY29Q_O/view?usp=drive_link",
 			"usecase": "debugging_fixes",
 			"issue_type": "code_correctness",
-			"issue_comment": "The issue can be found on page 28.",
+			"issue_comment": "The issue can be found on page 28. Both models failed to debug the issue.",
 			"issue_source": "pynews/job_view.py",
-      "comment": "Both models failed to debug the issue."
+      "comment": "Both models failed to debug the issue. The preference of model A subjected to response quality."
 		}
 	]
 }
