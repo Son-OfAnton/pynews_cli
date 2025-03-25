@@ -62,6 +62,17 @@
       "issue_comment": "Model A has shell command timout error. On top of that it could not fix the issue with the options.",
       "issue_source": "",
       "comment": ""
+		},
+    {
+      "prompt": "Now all the options are working except for the `s` option. When `s` is pressed, the code throws the errors `Error fetching submissions: ProgressBar.__init__() got an unexpected keyword argument 'desc'` and `Error displaying user stories: 'LoadingIndicator' object has no attribute 'is_alive'`",
+			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
+			"choice": 4,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "missing_memory",
+      "issue_comment": "Model A is hallucinating by returning unrelated mathemtical topics.",
+      "issue_source": "",
+      "comment": ""
 		}
   ]
 }

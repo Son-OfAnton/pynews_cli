@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from .colors import Colors, colorize, supports_color
 from .getch import getch
 from .constants import URLS
-from .loading import LoadingIndicator, ProgressBar
+from .loading import LoadingIndicator
 from .utils import format_time_ago
 
 USE_COLORS = supports_color()
@@ -110,31 +110,33 @@ def fetch_submissions(username, max_items=100):
         submissions = []
         total_ids = len(submission_ids)
         
-        progress_bar = ProgressBar(total=total_ids, desc=f"Fetching {total_ids} submissions")
-        progress_bar.start()
+        print(f"Fetching {total_ids} submissions for user {username}...")
+        completed = 0
         
         with ThreadPoolExecutor(max_workers=10) as executor:
             # Submit all fetch tasks
             future_to_id = {executor.submit(fetch_item, item_id): item_id for item_id in submission_ids}
             
             # Process results as they complete
-            for i, future in enumerate(as_completed(future_to_id)):
+            for future in as_completed(future_to_id):
                 submission = future.result()
                 if submission:
                     submissions.append(submission)
-                progress_bar.update(i+1)
+                completed += 1
                 
-        progress_bar.stop()
+                # Print a simple progress message
+                sys.stdout.write(f"\rCompleted: {completed}/{total_ids} submissions")
+                sys.stdout.flush()
+                
+        print("\nFinished fetching submissions.")
         return submissions
         
     except Exception as e:
         print(f"Error fetching submissions: {e}")
         return None
     finally:
-        if 'loader' in locals() and loader.is_alive():
+        if 'loader' in locals() and hasattr(loader, 'stop'):
             loader.stop()
-        if 'progress_bar' in locals() and progress_bar.is_alive():
-            progress_bar.stop()
 
 def categorize_submissions(submissions):
     """
@@ -856,7 +858,7 @@ def list_users():
                 current_index = min(len(users) - 1, current_index + 1)
         elif key == 'w':  # Alternative to up arrow
             current_index = max(0, current_index - 1)
-        elif key == 's':  # Alternative to down arrow
+        elif key == 's' and not (users and 0 <= current_index < len(users)):  # Alternative to down arrow, only if not trying to view stories
             current_index = min(len(users) - 1, current_index + 1)
 
 def handle_user_action_result(result):
