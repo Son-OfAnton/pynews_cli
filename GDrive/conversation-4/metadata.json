@@ -9,7 +9,7 @@
 	},
 	"prompts": [
     {
-			"prompts": "Implement a feature that retrieves poll post titles from Hacker News.",
+			"prompt": "Implement a feature that retrieves poll post titles from Hacker News.",
 			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/1-IvwyGotvCDxT1QLc-27fRsuLKI-_O87/view?usp=drive_link",
@@ -20,7 +20,7 @@
       "comment": "The issue is found on both models. In other aspects the responses are similar. Model A is slightly prefered due to its code quality."
 		},
 		{
-			"prompts": "There are conflicting `-p` flags used for pages and polls in parser.py file.",
+			"prompt": "There are conflicting `-p` flags used for pages and polls in parser.py file.",
 			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/17Dotc2wJp3gcrOPtYgg2v-VVqN4tFY8S/view?usp=drive_link",
@@ -31,7 +31,7 @@
       "comment": "Both models fixed the Bash command flag conflicting issue. Model A is slightly prefered due to its code quality."
 		},
 		{
-			"prompts": "An `AttributeError: type object 'ColorScheme' has no attribute 'COMMENTS'` error is raised from `pynews.py` file while fetching a single poll. Please fix the issue.",
+			"prompt": "An `AttributeError: type object 'ColorScheme' has no attribute 'COMMENTS'` error is raised from `pynews.py` file while fetching a single poll. Please fix the issue.",
 			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/1zZtP3mbreON8V7jo9lsx_RXglpaQFAGO/view?usp=drive_link",
@@ -42,7 +42,7 @@
       "comment": "Both models fixed the attribute error bug. Model A is slightly prefered due to its code quality."
 		},
 		{
-			"prompts": "Implement a feature to show the poll author along side the poll.",
+			"prompt": "Implement a feature to show the poll author along side the poll.",
 			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/1zA9_6Q8jWj6d9Dcv9qbD5yREffrSR90W/view?usp=drive_link",
@@ -53,7 +53,7 @@
       "comment": "Both models added a feature that shows the poll author. Model A is slightly prefered due to its code quality."
 		},
 		{
-			"prompts": "Implement a feature to show the number of votes for each poll.",
+			"prompt": "Implement a feature to show the number of votes for each poll.",
 			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
 			"choice": 1,
 			"gdrive": "https://drive.google.com/file/d/1x7TySePxrJdG_MBepTLrBoSfAu1b8TTj/view?usp=drive_link",
@@ -64,7 +64,7 @@
       "comment": "Both models added a feature that shows the number of votes for each poll. Model B is slightly prefered due to its conciseness."
 		},
 		{
-			"prompts": "Add a feature to show all poll options with their respective scores.",
+			"prompt": "Add a feature to show all poll options with their respective scores.",
 			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/1wKFIBKucZnDUXdZhg5HIGSaFcStQKQfA/view?usp=drive_link",
@@ -75,7 +75,7 @@
       "comment": "Both models added a feature that shows all poll options with their respective scores. Model A is slightly prefered due to its code quality."
 		},
 		{
-			"prompts": "Please run all the Bash commands related to polls to check the functionalities.",
+			"prompt": "Please run all the Bash commands related to polls to check the functionalities.",
 			"hfi_id": "0874e446-4188-4293-8a30-9261a12eae03",
 			"choice": 1,
 			"gdrive": "https://drive.google.com/file/d/1L-UpXmT8apcCQiEk_7H63WdiOJUzZncu/view?usp=drive_link",
