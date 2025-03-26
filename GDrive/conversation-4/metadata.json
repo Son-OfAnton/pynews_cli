@@ -15,8 +15,8 @@
 			"gdrive": "https://drive.google.com/file/d/1-IvwyGotvCDxT1QLc-27fRsuLKI-_O87/view?usp=drive_link",
 			"usecase": "initial_development",
 			"issue_type": "incorrect_bash_usage",
-      "issue_comment": "Conflicting bash commands in the script with same `-p` flag for pages and polls.",
-      "issue_source": "The is found on pages 15, 17, and 37.",
+      "issue_comment": "Conflicting bash commands in the script with same `-p` flag for pages and polls. The issue is found on pages 15, 17, and 37.",
+      "issue_source": "pynews/parser.py",
       "comment": "The issue is found on both models. In other aspects the responses are similar. Model A is slightly prefered due to its code quality."
 		},
 		{
@@ -81,8 +81,8 @@
 			"gdrive": "https://drive.google.com/file/d/1L-UpXmT8apcCQiEk_7H63WdiOJUzZncu/view?usp=drive_link",
 			"usecase": "debugging_fixes",
 			"issue_type": "missing_memory",
-      "issue_comment": "Both models hallucinated and exhibited memory issue trying to access a non-existent file named `poll_view_options.py`.",
-      "issue_source": "The is found on pages 3 and 20.",
+      "issue_comment": "Both models hallucinated and exhibited memory issue trying to access a non-existent file named `poll_view_options.py`. The issue can be found on pages 3 and 20.",
+      "issue_source": "pynews/poll_view_options.py",
 			"comment": "Both models resulted relatively the same code and same bug. Model B is slightly prefered due to its conciseness."
 		}
   ]
