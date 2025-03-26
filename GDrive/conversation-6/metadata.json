@@ -1,5 +1,5 @@
 {
-	"uuid": "d2f0c0a9-dd8a-4f7b-8bf7-b5db29e7d2e8",
+	"uuid": "f4bc4dd3-925e-447b-8191-8d99addc390f",
 	"model": "83aa91117c2fac3e25a3757eaa59f29ed3aeaf4dd7d3d384c673086c321e0644",
 	"root_gdrive": "https://drive.google.com/drive/folders/1bCWBjvFr2sxvKi4CkrhZw1nnpHiVouYV?usp=sharing",
 	"workflow": "existing_codebase",
@@ -10,10 +10,43 @@
 	"prompts": [
     {
 			"prompt": "Write unit tests for the functionality that fetches comments of stories.",
-			"hfi_id": "29e03d0c-5c7d-4d78-8bf5-aa93340b7b61",
+			"hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
 			"choice": -1,
 			"gdrive": "",
 			"usecase": "initial_development",
+			"issue_type": "code_correctness",
+      "issue_comment": "The path should be fixed.",
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+			"prompt": "How should be parent directory added to the path. The current file structure looks like `./tests`, `./pynews`. Then all of the files are in the `pynews` directory.",
+			"hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "code_correctness",
+      "issue_comment": "",
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+      "prompt": "Write unit tests for the ASK HackerNews functionality.",
+      "hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
+			"choice": -2,
+			"gdrive": "",
+			"usecase": "feature_implementation",
+			"issue_type": "code_correctness",
+      "issue_comment": "",
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+      "prompt": "Write unit tests for the Job stories functionality.",
+      "hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
+			"choice": -2,
+			"gdrive": "",
+			"usecase": "feature_implementation",
 			"issue_type": "code_correctness",
       "issue_comment": "",
       "issue_source": "",

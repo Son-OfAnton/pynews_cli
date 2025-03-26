@@ -261,25 +261,6 @@ def main():
     """Main entry point for the script."""
     options = get_parser_options()
     
-    # Handle user features first
-    if options.user:
-        return handle_user_profile(options.user)
-        
-    if options.user_search:
-        return handle_user_search()
-        
-    if options.list_users:
-        return handle_user_list()
-        
-    if options.user_karma:
-        return handle_user_karma(options.user_karma)
-        
-    if options.user_created:
-        return handle_user_created_date(options.user_created)
-        
-    if options.user_stories:
-        return handle_user_stories(options.user_stories)
-    
     # Handle comment viewing if requested
     if options.comments:
         # The display_comments_for_story function now handles pagination and navigation internally
@@ -369,6 +350,24 @@ def main():
         except KeyboardInterrupt:
             print("\nOperation cancelled by user.")
         return 0
+    
+    if options.user:
+        return handle_user_profile(options.user)
+        
+    if options.user_search:
+        return handle_user_search()
+        
+    if options.list_users:
+        return handle_user_list()
+        
+    if options.user_karma:
+        return handle_user_karma(options.user_karma)
+        
+    if options.user_created:
+        return handle_user_created_date(options.user_created)
+        
+    if options.user_stories:
+        return handle_user_stories(options.user_stories)
     
     # Default behavior for story listing
     if options.top_stories:
