@@ -55,11 +55,11 @@
     {
       "prompt": "Write unit tests for the Show poll stories functionality.",
       "hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
-			"choice": 3,
+			"choice": -1,
 			"gdrive": "",
 			"usecase": "feature_implementation",
-			"issue_type": "code_correctness",
-      "issue_comment": "",
+			"issue_type": "",
+      "issue_comment": "Both models did not include the Bash script to run the tests.",
       "issue_source": "",
       "comment": ""
 		}
