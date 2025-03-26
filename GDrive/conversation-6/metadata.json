@@ -44,7 +44,18 @@
     {
       "prompt": "Write unit tests for the Job stories functionality.",
       "hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
-			"choice": -2,
+			"choice": 3,
+			"gdrive": "",
+			"usecase": "feature_implementation",
+			"issue_type": "code_correctness",
+      "issue_comment": "Model A has missing tests.",
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+      "prompt": "Write unit tests for the Show poll stories functionality.",
+      "hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
+			"choice": 3,
 			"gdrive": "",
 			"usecase": "feature_implementation",
 			"issue_type": "code_correctness",
