@@ -1,5 +1,5 @@
 {
-	"uuid": "1ef5b2cb-20e0-41b7-8c10-fa15ceadd3fa",
+	"uuid": "a19e7c20-9867-4f9f-9988-edb0cfc9fe3f",
 	"model": "83aa91117c2fac3e25a3757eaa59f29ed3aeaf4dd7d3d384c673086c321e0644",
 	"root_gdrive": "https://drive.google.com/drive/folders/1bCWBjvFr2sxvKi4CkrhZw1nnpHiVouYV?usp=sharing",
 	"workflow": "existing_codebase",
@@ -12,67 +12,78 @@
 			"prompt": "Create a feature to fetch HackerNews users names.",
 			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
 			"choice": -2,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1RTgpYYf6bn2CJANgTxxhiW0u-fHieaYE/view?usp=drive_link",
 			"usecase": "initial_development",
-			"issue_type": "missing_memory",
-      "issue_comment": "Error output",
-      "issue_source": "",
-      "comment": ""
+			"issue_type": "code_correctness",
+      "issue_comment": "An error happend when model B tried to parse the JSON response from the CURL request. The issue can be found on page 33.",
+      "issue_source": "A Bash command CURL request on page 33.",
+      "comment": "Since model A achieved what the prompt asked for without any issues, it is better than model B."
 		},
     {
 			"prompt": "Create a feature to fetch Karma of a user.",
 			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
 			"choice": 2,
-			"gdrive": "",
-			"usecase": "initial_development",
-			"issue_type": "missing_memory",
-      "issue_comment": "Model A has shell command timout error",
-      "issue_source": "",
-      "comment": ""
+			"gdrive": "https://drive.google.com/file/d/1VPcOBiUIe2Dfm3VBMj0hLrReFUe9bsHo/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "tool",
+      "issue_comment": "Model A has shell command timout error. This can found on page 12.",
+      "issue_source": "A Bash command CURL request on page 12.",
+      "comment": "Model B answered the prompt without any issues. Model A has a shell command timout error eventhough it answered the prompt too."
 		},
     {
 			"prompt": "Create a feature to show account creation date for a specific user.",
 			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
 			"choice": -1,
-			"gdrive": "",
-			"usecase": "initial_development",
-			"issue_type": "missing_memory",
+			"gdrive": "https://drive.google.com/file/d/1TbMmCqDJNc2g5sajOUXAKvQ-lYFlMufn/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "",
       "issue_comment": "",
       "issue_source": "",
-      "comment": ""
+      "comment": "Both models answered the prompt without any issues."
 		},
     {
 			"prompt": "Implement a feature to fetch all the stories submited by a user.",
 			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
 			"choice": -1,
-			"gdrive": "",
-			"usecase": "initial_development",
-			"issue_type": "missing_memory",
-      "issue_comment": "model A's options are not working. Model B is experiencing an import error in `pynews.py` while importing `display_user`",
-      "issue_source": "",
-      "comment": ""
+			"gdrive": "https://drive.google.com/file/d/1RNFpkxQLwhv862V4UfKOTdu8mSK1cQIF/view?usp=drive_link",
+			"usecase": "feature_implementation",
+			"issue_type": "",
+			"issue_comment": "",
+			"issue_source": "",
+      "comment": "Both models answered the prompt without any issues."
 		},
     {
 			"prompt": "The options to `k`, `c`, `s` to see karma, creation date, and stories of user don't work. When these options are pressed the terminal exits.",
 			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
 			"choice": 4,
-			"gdrive": "",
-			"usecase": "initial_development",
-			"issue_type": "missing_memory",
-      "issue_comment": "Model A has shell command timout error. On top of that it could not fix the issue with the options.",
-      "issue_source": "",
-      "comment": ""
+			"gdrive": "https://drive.google.com/file/d/1mtv0HdqXi0P2xeBsJrlGvDmkMudVJcg1/view?usp=drive_link",
+			"usecase": "debugging_fixes",
+			"issue_type": "tool",
+      "issue_comment": "Model A has shell command timout error. On top of that it could not fix the issue with the options. The issue can be found on page 1.",
+      "issue_source": "A Bash command CURL request on page 1.",
+      "comment": "Model B achieved what the prompt asked for without any issues. Model A has a shell command timout error and could not fix the issue with the options."
 		},
     {
       "prompt": "Now all the options are working except for the `s` option. When `s` is pressed, the code throws the errors `Error fetching submissions: ProgressBar.__init__() got an unexpected keyword argument 'desc'` and `Error displaying user stories: 'LoadingIndicator' object has no attribute 'is_alive'`",
 			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
 			"choice": 4,
-			"gdrive": "",
-			"usecase": "initial_development",
+			"gdrive": "https://drive.google.com/file/d/11gzh_5renOX4JfJCGUfGdjlJIZbYlPvm/view?usp=drive_link",
+			"usecase": "debugging_fixes",
 			"issue_type": "missing_memory",
-      "issue_comment": "Model A is hallucinating by returning unrelated mathemtical topics.",
-      "issue_source": "",
-      "comment": ""
+      "issue_comment": "Model A forgot what it was doing and hallucinated by returning unrelated mathemtical topics. The issue can be found page 26.",
+      "issue_source": "pynews/user_view.py",
+      "comment": "Model B is far better since it answered the prompt without any issues. Model A hallucinated by returning unrelated mathemtical topics."
+		},
+    {
+      "prompt": "Can you run all the Bash commands related to user functionality and see if they are working?",
+			"hfi_id": "d369d911-1672-43b0-96e4-7bd347872e38",
+			"choice": -4,
+			"gdrive": "https://drive.google.com/file/d/1osJ8yrnBC6eNSOw7MApu2YGKZb1FvRSf/view?usp=drive_link",
+			"usecase": "initial_development",
+			"issue_type": "technical_inconsistency",
+      "issue_comment": "Model B didn't even try to execute the commands to test the user functionality. Model B just returned `parser.py` file. The issue can be found on page 23.",
+      "issue_source": "pynews/parser.py",
+      "comment": "Model A run the commands to test the functionality. However, some tests are failing due to internet connectivity issues."
 		}
   ]
 }
