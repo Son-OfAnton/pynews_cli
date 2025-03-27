@@ -276,9 +276,10 @@ def main():
                 export_filename=options.export_filename,
                 include_timestamp=not options.no_timestamp
             )
-
         except KeyboardInterrupt:
             print("\nOperation cancelled by user.")
+        except Exception as e:
+            print(f"\nError: {e}")
         return 0
     
     # Handle Ask HN story detailed view if requested

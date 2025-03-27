@@ -18,6 +18,17 @@
       "issue_comment": "Model B throws error while using the `grep` command",
       "issue_source": "",
       "comment": ""
+		},
+    {
+			"prompt": "I am not seeing the file I exported in the specified directory. Please return all relevant files in a code block.",
+			"hfi_id": "",
+			"choice": -2,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "bash",
+      "issue_comment": "Model B throws error while using the `grep` command",
+      "issue_source": "",
+      "comment": ""
 		}
   ]
 }

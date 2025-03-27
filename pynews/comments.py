@@ -778,99 +778,79 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
             print(f"\n{error}")
             getch()  # Wait for any key before continuing
         
-                # Handle exports (if requested)
-        if (export_json or export_csv) and not flat_comments:
-            # If we haven’t already fetched/processed comments, do it now
-            message = "Retrieving comments for export..."
-            if USE_COLORS:
-                message = colorize(message, ColorScheme.INFO)
-            print(message)
-
-            # Create a progress bar for fetching comments
-            progress_bar = ProgressBar(
-                total=100, 
-                prefix="Fetching Comments:",
-                suffix="Complete", 
-                length=50
-            )
-            progress_bar.start()
-
-            comment_tree = fetch_comment_tree(
-                story.get("kids", []), 
-                max_threads=10,
-                progress_callback=progress_bar.update
-            )
-            progress_bar.stop()
-
-            # Flatten for processing
-            flatten_progress = ProgressBar(
-                total=100, 
-                prefix="Organizing Comments:",
-                suffix="Complete", 
-                length=50
-            )
-            flatten_progress.start()
-            flat_comments, indent_levels = flatten_comment_tree(
-                comment_tree,
-                progress_callback=flatten_progress.update
-            )
-            flatten_progress.stop()
-
-        # Prepare export file path
+        # Handle exports (if requested)
+    if (export_json or export_csv) and comment_tree:
+        # Prepare export file path and ensure it exists
         if export_path is None:
-            export_path = "."  # Current directory
-
+            export_path = os.getcwd()  # Use current directory
+        else:
+            # Fix: Create directory if it doesn't exist
+            os.makedirs(export_path, exist_ok=True)
+            
+        # Make sure export_path is an absolute path
+        export_path = os.path.abspath(export_path)
+            
         base_filename = export_filename or f"hn_story_{story_id}_comments"
-
+        
         # Export to JSON if requested
-        if export_json and comment_tree:
+        if export_json:
             export_msg = "Exporting comments to JSON..."
             if USE_COLORS:
                 export_msg = colorize(export_msg, ColorScheme.INFO)
             print(export_msg)
-
+            
             json_filename = os.path.join(export_path, f"{base_filename}.json")
             if include_timestamp and not export_filename:
                 # Include timestamp in the auto-generated filename
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 json_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.json")
-
+                
             # Export to JSON
-            json_file = export_comments_to_json(comment_tree, story, json_filename)
-
-            success_msg = f"Comments exported to JSON: {json_file}"
-            if USE_COLORS:
-                success_msg = colorize(success_msg, ColorScheme.SUCCESS)
-            print(success_msg)
-
+            try:
+                json_file = export_comments_to_json(comment_tree, story, json_filename)
+                success_msg = f"Comments exported to JSON: {json_file}"
+                if USE_COLORS:
+                    success_msg = colorize(success_msg, ColorScheme.SUCCESS)
+                print(success_msg)
+            except Exception as e:
+                error_msg = f"Error exporting to JSON: {e}"
+                if USE_COLORS:
+                    error_msg = colorize(error_msg, ColorScheme.ERROR)
+                print(error_msg)
+        
         # Export to CSV if requested
-        if export_csv and comment_tree:
+        if export_csv:
             export_msg = "Exporting comments to CSV..."
             if USE_COLORS:
                 export_msg = colorize(export_msg, ColorScheme.INFO)
             print(export_msg)
-
+            
             csv_filename = os.path.join(export_path, f"{base_filename}.csv")
             if include_timestamp and not export_filename:
                 # Include timestamp in the auto-generated filename
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 csv_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.csv")
-
+                
             # Export to CSV
-            csv_file = export_comments_to_csv(comment_tree, story, csv_filename)
-
-            success_msg = f"Comments exported to CSV: {csv_file}"
-            if USE_COLORS:
-                success_msg = colorize(success_msg, ColorScheme.SUCCESS)
-            print(success_msg)
-
-            # If exporting without displaying, give user a chance to read the export messages
-            if export_json or export_csv:
-                prompt = "\nPress any key to continue..."
+            try:
+                csv_file = export_comments_to_csv(comment_tree, story, csv_filename)
+                success_msg = f"Comments exported to CSV: {csv_file}"
                 if USE_COLORS:
-                    prompt = colorize(prompt, ColorScheme.PROMPT)
-                print(prompt)
-                getch()  # Wait for any key
+                    success_msg = colorize(success_msg, ColorScheme.SUCCESS)
+                print(success_msg)
+            except Exception as e:
+                error_msg = f"Error exporting to CSV: {e}"
+                if USE_COLORS:
+                    error_msg = colorize(error_msg, ColorScheme.ERROR)
+                print(error_msg)
+            
+        # If exporting without displaying, give user a chance to read the export messages
+        if export_json or export_csv:
+            prompt = "\nPress any key to continue..."
+            if USE_COLORS:
+                prompt = colorize(prompt, ColorScheme.PROMPT)
+            print(prompt)
+            getch()  # Wait for any key
 
     
     return (total_pages, current_page, total_comments)
