@@ -1,5 +1,5 @@
 {
-	"uuid": "f4bc4dd3-925e-447b-8191-8d99addc390f",
+	"uuid": "95ccff52-ac91-473b-8fa0-cf05e2329bc3",
 	"model": "83aa91117c2fac3e25a3757eaa59f29ed3aeaf4dd7d3d384c673086c321e0644",
 	"root_gdrive": "https://drive.google.com/drive/folders/1bCWBjvFr2sxvKi4CkrhZw1nnpHiVouYV?usp=sharing",
 	"workflow": "existing_codebase",
@@ -12,89 +12,89 @@
 			"prompt": "Write unit tests for the functionality that fetches comments of stories.",
 			"hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
 			"choice": -1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/12oVwMEjqeiFrsw8g08IO-1sB2yD7br6E/view?usp=drive_link",
 			"usecase": "initial_development",
-			"issue_type": "code_correctness",
-      "issue_comment": "The path should be fixed.",
+			"issue_type": "",
+      "issue_comment": "",
       "issue_source": "",
-      "comment": ""
+      "comment": "Both models wrote the appropriate tests. Both models didn't have memory and Bash issues. Model A's selection is subject to conciseness."
 		},
     {
 			"prompt": "How should be parent directory added to the path. The current file structure looks like `./tests`, `./pynews`. Then all of the files are in the `pynews` directory.",
 			"hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
 			"choice": -1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1F-cbEgAMRSbDIlSctBdzQt7hlWR_fd9W/view?usp=drive_link",
 			"usecase": "debugging_fixes",
-			"issue_type": "code_correctness",
+			"issue_type": "",
       "issue_comment": "",
       "issue_source": "",
-      "comment": ""
+      "comment": "Both models provided guides to replace the placeholder path `/tmp/inputs` according to the given folder structure. Model A's selection is subject to conciseness."
 		},
     {
       "prompt": "Write unit tests for the ASK HackerNews functionality.",
       "hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
 			"choice": -2,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1xkWQ0g6GqlbkP6J_hNyVf0wdqpsTdd7N/view?usp=drive_link",
 			"usecase": "feature_implementation",
-			"issue_type": "code_correctness",
-      "issue_comment": "",
-      "issue_source": "",
-      "comment": ""
+			"issue_type": "technical_incosistency",
+      "issue_comment": "Model B didn't write intergration tests, thus its response is incomplete. The test model B should have written is found on page 13.",
+      "issue_source": "tests/test_ask_integration.py",
+      "comment": "Due to model A's more complete testing suite, model A is better than model B."
 		},
     {
       "prompt": "Write unit tests for the Job stories functionality.",
       "hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
 			"choice": 3,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1LFqA7Bddsa5dvoS10WODA0rtZW-jG1B6/view?usp=drive_link",
 			"usecase": "feature_implementation",
-			"issue_type": "code_correctness",
-      "issue_comment": "Model A has missing tests.",
-      "issue_source": "",
-      "comment": ""
+			"issue_type": "technical_incosistency",
+      "issue_comment": "Model A didn't write integration tests and unit tests for job filtering functionality. The tests model A should have written are found on page 30 and 34.",
+      "issue_source": "tests/test_job_integration.py",
+      "comment": "Due to model B's more complete testing suite, model B is better than model A."
 		},
     {
       "prompt": "Write unit tests for the Show poll stories functionality.",
       "hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
 			"choice": -1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1KVphcL3X3RWhCxiXoZ_3VwlwdaGOIOCP/view?usp=drive_link",
 			"usecase": "feature_implementation",
-			"issue_type": "",
+			"issue_type": "incorrect_bash_usage",
       "issue_comment": "Both models did not include the Bash script to run the tests.",
-      "issue_source": "",
-      "comment": ""
+      "issue_source": "tests/run_poll_tests.sh",
+      "comment": "Other than the missing Bash script, both models wrote the appropriate tests. Model A's selection is subject to conciseness."
 		},
     {
       "prompt": "Please write a Bash script to run the poll stories tests.",
       "hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
 			"choice": 4,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/144cDUZz1sSbQ7ZllKUFm2BSKkkE4-3bW/view?usp=drive_link",
 			"usecase": "debugging_fixes",
-			"issue_type": "",
-      "issue_comment": "Model B did what it is asked for. However, model A forgot the file `test_poll_utils.py` and had to recreate it.",
-      "issue_source": "",
-      "comment": ""
+			"issue_type": "missing_memory",
+      "issue_comment": "Model B did what it is asked for. However, model A forgot the file `test_poll_utils.py` existed and had to recreate it. The unncecessarily created `test_poll_utils` is found on page 4.",
+      "issue_source": "tests/test_poll_utils.py",
+      "comment": "Model B is far better than model A since it did all it asked without any issue."
 		},
     {
       "prompt": "Write unit tests for fetching user information.",
       "hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
 			"choice": -1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1YVeZgjx5vkwTwOn7wPTVF3PtrgcUyz3Z/view?usp=drive_link",
 			"usecase": "feature_implementation",
-			"issue_type": "Both models didn't write the Bash script to run the user fetching tests.",
-      "issue_comment": "",
-      "issue_source": "",
-      "comment": ""
+			"issue_type": "technical_incosistency",
+      "issue_comment": "Both models didn't write the Bash script to run the user fetching tests.",
+      "issue_source": "tests/run_user_tests.sh",
+      "comment": "Both models failed to write the Bash script to run the user fetching tests. Model A's selection is subject to conciseness."
 		},
     {
       "prompt": "Please write a Bash script to run the user fetching tests.",
       "hfi_id": "1cd6d169-88d5-4a3a-b1a6-f979bf3f043a",
 			"choice": -1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1Ngwe8ed9XPqJiAV4e2rL4Jq9KMz8MOeR/view?usp=drive_link",
 			"usecase": "debugging_fixes",
 			"issue_type": "",
       "issue_comment": "",
       "issue_source": "",
-      "comment": ""
+      "comment": "Both models wrote the Bash script to run the user fetching tests. Model A's selection is subject to conciseness."
 		}
   ]
 }
