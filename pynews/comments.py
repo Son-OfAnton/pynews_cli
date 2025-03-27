@@ -11,11 +11,17 @@ import os
 import select
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
+import json
+import csv
 
 from .constants import URLS
 from .loading import with_loading, with_progress, LoadingIndicator, ProgressBar, IndeterminateProgressBar
 from .colors import ColorScheme, colorize, supports_color
 from .getch import getch
+from .exporters import export_comments_to_json, export_comments_to_csv
+
+
+sys.path.append("..")
 
 # Check for color support
 USE_COLORS = supports_color()
@@ -556,7 +562,7 @@ def get_navigation_key(total_pages=0):
             # Invalid key
             return {'action': 'invalid'}
 
-def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
+def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, export_json=False, export_csv=False, export_path=None, export_filename=None, include_timestamp=True):
     """
     Display comments for a given story with interactive pagination support.
     Now using single-keystroke navigation without pressing Enter.
@@ -771,5 +777,100 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80):
             
             print(f"\n{error}")
             getch()  # Wait for any key before continuing
+        
+                # Handle exports (if requested)
+        if (export_json or export_csv) and not flat_comments:
+            # If we haven’t already fetched/processed comments, do it now
+            message = "Retrieving comments for export..."
+            if USE_COLORS:
+                message = colorize(message, ColorScheme.INFO)
+            print(message)
+
+            # Create a progress bar for fetching comments
+            progress_bar = ProgressBar(
+                total=100, 
+                prefix="Fetching Comments:",
+                suffix="Complete", 
+                length=50
+            )
+            progress_bar.start()
+
+            comment_tree = fetch_comment_tree(
+                story.get("kids", []), 
+                max_threads=10,
+                progress_callback=progress_bar.update
+            )
+            progress_bar.stop()
+
+            # Flatten for processing
+            flatten_progress = ProgressBar(
+                total=100, 
+                prefix="Organizing Comments:",
+                suffix="Complete", 
+                length=50
+            )
+            flatten_progress.start()
+            flat_comments, indent_levels = flatten_comment_tree(
+                comment_tree,
+                progress_callback=flatten_progress.update
+            )
+            flatten_progress.stop()
+
+        # Prepare export file path
+        if export_path is None:
+            export_path = "."  # Current directory
+
+        base_filename = export_filename or f"hn_story_{story_id}_comments"
+
+        # Export to JSON if requested
+        if export_json and comment_tree:
+            export_msg = "Exporting comments to JSON..."
+            if USE_COLORS:
+                export_msg = colorize(export_msg, ColorScheme.INFO)
+            print(export_msg)
+
+            json_filename = os.path.join(export_path, f"{base_filename}.json")
+            if include_timestamp and not export_filename:
+                # Include timestamp in the auto-generated filename
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                json_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.json")
+
+            # Export to JSON
+            json_file = export_comments_to_json(comment_tree, story, json_filename)
+
+            success_msg = f"Comments exported to JSON: {json_file}"
+            if USE_COLORS:
+                success_msg = colorize(success_msg, ColorScheme.SUCCESS)
+            print(success_msg)
+
+        # Export to CSV if requested
+        if export_csv and comment_tree:
+            export_msg = "Exporting comments to CSV..."
+            if USE_COLORS:
+                export_msg = colorize(export_msg, ColorScheme.INFO)
+            print(export_msg)
+
+            csv_filename = os.path.join(export_path, f"{base_filename}.csv")
+            if include_timestamp and not export_filename:
+                # Include timestamp in the auto-generated filename
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                csv_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.csv")
+
+            # Export to CSV
+            csv_file = export_comments_to_csv(comment_tree, story, csv_filename)
+
+            success_msg = f"Comments exported to CSV: {csv_file}"
+            if USE_COLORS:
+                success_msg = colorize(success_msg, ColorScheme.SUCCESS)
+            print(success_msg)
+
+            # If exporting without displaying, give user a chance to read the export messages
+            if export_json or export_csv:
+                prompt = "\nPress any key to continue..."
+                if USE_COLORS:
+                    prompt = colorize(prompt, ColorScheme.PROMPT)
+                print(prompt)
+                getch()  # Wait for any key
+
     
     return (total_pages, current_page, total_comments)

@@ -269,8 +269,14 @@ def main():
                 options.comments, 
                 page_size=options.page_size, 
                 page_num=options.page, 
-                width=options.width
+                width=options.width,
+                export_json=options.export_json,
+                export_csv=options.export_csv,
+                export_path=options.export_path,
+                export_filename=options.export_filename,
+                include_timestamp=not options.no_timestamp
             )
+
         except KeyboardInterrupt:
             print("\nOperation cancelled by user.")
         return 0

@@ -407,6 +407,37 @@ def get_parser_options() -> argparse.Namespace:
         help="Display width for formatting comments",
     )
 
+    # Comment export options
+    parser.add_argument(
+        "--export-json",
+        action="store_true",
+        help="Export comments to a JSON file",
+    )
+    
+    parser.add_argument(
+        "--export-csv",
+        action="store_true",
+        help="Export comments to a CSV file",
+    )
+    
+    parser.add_argument(
+        "--export-path",
+        type=str,
+        help="Path to save exported comments (default: current directory)",
+    )
+    
+    parser.add_argument(
+        "--export-filename",
+        type=str,
+        help="Filename for exported comments (without extension, default: hn_story_ID_comments_TIMESTAMP)",
+    )
+    
+    parser.add_argument(
+        "--no-timestamp",
+        action="store_true",
+        help="Omit timestamp from export filename",
+    )
+
     options = parser.parse_args()
     
     # If --ask-discussed is used, set sort_by_comments to True

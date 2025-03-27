@@ -1,0 +1,23 @@
+{
+	"uuid": "5d9ece38-9b0c-40db-bd09-0ee52b8ef195",
+	"model": "83aa91117c2fac3e25a3757eaa59f29ed3aeaf4dd7d3d384c673086c321e0644",
+	"root_gdrive": "https://drive.google.com/drive/folders/1bCWBjvFr2sxvKi4CkrhZw1nnpHiVouYV?usp=sharing",
+	"workflow": "existing_codebase",
+	"codebase": {
+		"url": "https://github.com/mazulo/pynews_cli",
+		"description": "A CLI tool to read Hacker News stories."
+	},
+	"prompts": [
+    {
+			"prompt": "Implement a feature to save comments of a single story in JSON or CSV format locally.",
+			"hfi_id": "",
+			"choice": -2,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "bash",
+      "issue_comment": "Model B throws error while using the `grep` command",
+      "issue_source": "",
+      "comment": ""
+		}
+  ]
+}
