@@ -16,7 +16,7 @@ import csv
 
 from .constants import URLS
 from .loading import with_loading, with_progress, LoadingIndicator, ProgressBar, IndeterminateProgressBar
-from .colors import ColorScheme, colorize, supports_color
+from .colors import ColorScheme, colorize, supports_color, Colors  # Added Colors here
 from .getch import getch
 from .exporters import export_comments_to_json, export_comments_to_csv
 
@@ -779,78 +779,80 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
             getch()  # Wait for any key before continuing
         
         # Handle exports (if requested)
-    if (export_json or export_csv) and comment_tree:
-        # Prepare export file path and ensure it exists
-        if export_path is None:
-            export_path = os.getcwd()  # Use current directory
-        else:
-            # Fix: Create directory if it doesn't exist
-            os.makedirs(export_path, exist_ok=True)
-            
-        # Make sure export_path is an absolute path
-        export_path = os.path.abspath(export_path)
-            
-        base_filename = export_filename or f"hn_story_{story_id}_comments"
-        
-        # Export to JSON if requested
-        if export_json:
-            export_msg = "Exporting comments to JSON..."
-            if USE_COLORS:
-                export_msg = colorize(export_msg, ColorScheme.INFO)
-            print(export_msg)
-            
-            json_filename = os.path.join(export_path, f"{base_filename}.json")
-            if include_timestamp and not export_filename:
-                # Include timestamp in the auto-generated filename
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                json_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.json")
+        if (export_json or export_csv) and comment_tree:
+            # Prepare export file path and ensure it exists
+            if export_path is None:
+                export_path = os.getcwd()  # Use current directory
+            else:
+                # Fix: Create directory if it doesn't exist
+                os.makedirs(export_path, exist_ok=True)
                 
-            # Export to JSON
-            try:
-                json_file = export_comments_to_json(comment_tree, story, json_filename)
-                success_msg = f"Comments exported to JSON: {json_file}"
-                if USE_COLORS:
-                    success_msg = colorize(success_msg, ColorScheme.SUCCESS)
-                print(success_msg)
-            except Exception as e:
-                error_msg = f"Error exporting to JSON: {e}"
-                if USE_COLORS:
-                    error_msg = colorize(error_msg, ColorScheme.ERROR)
-                print(error_msg)
-        
-        # Export to CSV if requested
-        if export_csv:
-            export_msg = "Exporting comments to CSV..."
-            if USE_COLORS:
-                export_msg = colorize(export_msg, ColorScheme.INFO)
-            print(export_msg)
-            
-            csv_filename = os.path.join(export_path, f"{base_filename}.csv")
-            if include_timestamp and not export_filename:
-                # Include timestamp in the auto-generated filename
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                csv_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.csv")
+            # Make sure export_path is an absolute path
+            export_path = os.path.abspath(export_path)
                 
-            # Export to CSV
-            try:
-                csv_file = export_comments_to_csv(comment_tree, story, csv_filename)
-                success_msg = f"Comments exported to CSV: {csv_file}"
-                if USE_COLORS:
-                    success_msg = colorize(success_msg, ColorScheme.SUCCESS)
-                print(success_msg)
-            except Exception as e:
-                error_msg = f"Error exporting to CSV: {e}"
-                if USE_COLORS:
-                    error_msg = colorize(error_msg, ColorScheme.ERROR)
-                print(error_msg)
+            base_filename = export_filename or f"hn_story_{story_id}_comments"
             
-        # If exporting without displaying, give user a chance to read the export messages
-        if export_json or export_csv:
-            prompt = "\nPress any key to continue..."
-            if USE_COLORS:
-                prompt = colorize(prompt, ColorScheme.PROMPT)
-            print(prompt)
-            getch()  # Wait for any key
+            # Export to JSON if requested
+            if export_json:
+                export_msg = "Exporting comments to JSON..."
+                if USE_COLORS:
+                    export_msg = colorize(export_msg, ColorScheme.INFO)
+                print(export_msg)
+                
+                json_filename = os.path.join(export_path, f"{base_filename}.json")
+                if include_timestamp and not export_filename:
+                    # Include timestamp in the auto-generated filename
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    json_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.json")
+                    
+                # Export to JSON
+                try:
+                    json_file = export_comments_to_json(comment_tree, story, json_filename)
+                    success_msg = f"Comments exported to JSON: {json_file}"
+                    if USE_COLORS:
+                        # Fix: Use BRIGHT_GREEN instead of SUCCESS which doesn't exist
+                        success_msg = colorize(success_msg, Colors.BRIGHT_GREEN)
+                    print(success_msg)
+                except Exception as e:
+                    error_msg = f"Error exporting to JSON: {e}"
+                    if USE_COLORS:
+                        error_msg = colorize(error_msg, ColorScheme.ERROR)
+                    print(error_msg)
+            
+                # Export to CSV if requested
+                if export_csv:
+                    export_msg = "Exporting comments to CSV..."
+                    if USE_COLORS:
+                        export_msg = colorize(export_msg, ColorScheme.INFO)
+                    print(export_msg)
+                    
+                    csv_filename = os.path.join(export_path, f"{base_filename}.csv")
+                    if include_timestamp and not export_filename:
+                        # Include timestamp in the auto-generated filename
+                        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                        csv_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.csv")
+                        
+                    # Export to CSV
+                    try:
+                        csv_file = export_comments_to_csv(comment_tree, story, csv_filename)
+                        success_msg = f"Comments exported to CSV: {csv_file}"
+                        if USE_COLORS:
+                            # Fix: Use BRIGHT_GREEN instead of SUCCESS which doesn't exist
+                            success_msg = colorize(success_msg, Colors.BRIGHT_GREEN)
+                        print(success_msg)
+                    except Exception as e:
+                        error_msg = f"Error exporting to CSV: {e}"
+                        if USE_COLORS:
+                            error_msg = colorize(error_msg, ColorScheme.ERROR)
+                        print(error_msg)
+                    
+                # If exporting without displaying, give user a chance to read the export messages
+                if export_json or export_csv:
+                    prompt = "\nPress any key to continue..."
+                    if USE_COLORS:
+                        prompt = colorize(prompt, ColorScheme.PROMPT)
+                    print(prompt)
+                    getch()  # Wait for any key
 
     
     return (total_pages, current_page, total_comments)

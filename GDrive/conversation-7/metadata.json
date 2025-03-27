@@ -10,7 +10,7 @@
 	"prompts": [
     {
 			"prompt": "Implement a feature to save comments of a single story in JSON or CSV format locally.",
-			"hfi_id": "",
+			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
 			"choice": -2,
 			"gdrive": "",
 			"usecase": "initial_development",
@@ -21,12 +21,23 @@
 		},
     {
 			"prompt": "I am not seeing the file I exported in the specified directory. Please return all relevant files in a code block.",
-			"hfi_id": "",
-			"choice": -2,
+			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
+			"choice": -1,
 			"gdrive": "",
 			"usecase": "debugging_fixes",
-			"issue_type": "bash",
-      "issue_comment": "Model B throws error while using the `grep` command",
+			"issue_type": "",
+      "issue_comment": "",
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+			"prompt": "Now the export works, but I am getting this error in the log `Error exporting to JSON: type object 'ColorScheme' has no attribute 'SUCCESS'`. Please fix it.",
+			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "",
+      "issue_comment": "Both models removed the error log. However, the exporting functionality is broked now. Model B forgot to add the variable `base_filename` to name the file too.",
       "issue_source": "",
       "comment": ""
 		}
