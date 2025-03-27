@@ -609,6 +609,7 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
     
     # Process export options
     should_export = export_json or export_csv
+    export_only = should_export and os.environ.get('PYNEWS_EXPORT_ONLY', '0') == '1'
     
     if should_export:
         # Fetch comments for export
@@ -707,14 +708,195 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
                     error_msg = colorize(error_msg, ColorScheme.ERROR)
                 print(error_msg)
         
-        # If only exporting without displaying comments, return early
-        if not should_view_comments():
+        # If export was requested, ask if user wants to view comments
+        # BUT ONLY if both export options were specified and not viewing
+        if should_export and not comment_tree:
             prompt = "\nExport completed. Press any key to exit..."
             if USE_COLORS:
                 prompt = colorize(prompt, ColorScheme.PROMPT)
             print(prompt)
             getch()  # Wait for any key
             return (0, 0, 0)
+    
+    # Continue with the regular comment viewing (this runs for both export+view and view only)
+    while True:
+        clear_screen()
+        
+        # Display story information
+        if USE_COLORS:
+            title = colorize(f"\n=== Comments for: {story.get('title', 'Unknown Story')} ===", 
+                           ColorScheme.TITLE)
+            author_line = f"By {colorize(story.get('by', 'Unknown'), ColorScheme.AUTHOR)} · {format_timestamp(story.get('time', 0))}"
+            points = colorize(str(story.get('score', 0)), ColorScheme.POINTS)
+            url = story.get('url', '[No URL]')
+            if url != '[No URL]':
+                url = colorize(url, ColorScheme.URL)
+            info_line = f"Points: {points} · URL: {url}\n"
+        else:
+            title = f"\n=== Comments for: {story.get('title', 'Unknown Story')} ==="
+            author_line = f"By {story.get('by', 'Unknown')} · {format_timestamp(story.get('time', 0))}"
+            info_line = f"Points: {story.get('score', 0)} · URL: {story.get('url', '[No URL]')}\n"
+        
+        print(title)
+        print(author_line)
+        print(info_line)
+        
+        # Check if the story has comments
+        comment_ids = story.get('kids', [])
+        if not comment_ids:
+            message = "This story has no comments."
+            if USE_COLORS:
+                message = colorize(message, ColorScheme.INFO)
+            print(message)
+            
+            prompt = "\nPress any key to quit..."
+            if USE_COLORS:
+                prompt = colorize(prompt, ColorScheme.PROMPT)
+            print(prompt)
+            getch()  # Wait for any key
+            return (0, 0, 0)
+        
+        # Fetch and process comments if not already cached
+        if comment_tree is None:
+            message = f"Retrieving comments for this story..."
+            if USE_COLORS:
+                message = colorize(message, ColorScheme.INFO)
+            print(message)
+            
+            # Create a progress bar for fetching comments
+            progress_bar = ProgressBar(
+                total=100, 
+                prefix='Fetching Comments:',
+                suffix='Complete', 
+                length=50
+            )
+            progress_bar.start()
+            
+            try:
+                # Fetch comments with progress updates
+                comment_tree = fetch_comment_tree(
+                    comment_ids, 
+                    max_threads=10,
+                    progress_callback=progress_bar.update
+                )
+            finally:
+                progress_bar.stop()
+                
+            needs_resort = True
+            
+        # Rest of original display_comments_for_story function continues here...
+        # Re-sort if needed
+        if needs_resort:
+            message = f"Sorting comments ({get_sort_order_display(sort_order)})..."
+            if USE_COLORS:
+                message = colorize(message, ColorScheme.INFO)
+            print(message)
+            
+            # Create progress bar for sorting
+            sort_progress = ProgressBar(
+                total=100, 
+                prefix=f'Sorting ({get_sort_order_display(sort_order)}):',
+                suffix='Complete', 
+                length=50
+            )
+            sort_progress.start()
+            
+            try:
+                # Sort with progress updates
+                sorted_tree = sort_comment_tree(
+                    comment_tree, 
+                    sort_order,
+                    progress_callback=sort_progress.update
+                )
+            finally:
+                sort_progress.stop()
+            
+            # Create progress bar for flattening
+            flatten_progress = ProgressBar(
+                total=100, 
+                prefix='Organizing Comments:',
+                suffix='Complete', 
+                length=50
+            )
+            flatten_progress.start()
+            
+            try:
+                # Flatten with progress updates
+                flat_comments, indent_levels = flatten_comment_tree(
+                    sorted_tree,
+                    progress_callback=flatten_progress.update
+                )
+            finally:
+                flatten_progress.stop()
+            
+            total_comments = len(flat_comments)
+            total_pages = (total_comments + page_size - 1) // page_size
+            
+            # Validate page number
+            if current_page > total_pages and total_pages > 0:
+                current_page = total_pages
+            
+            needs_resort = False
+            
+        # Show pagination info
+        if USE_COLORS:
+            page_info = f"Page {colorize(str(current_page), ColorScheme.COUNT)} of " + \
+                       f"{colorize(str(total_pages), ColorScheme.COUNT)} " + \
+                       f"(Total comments: {colorize(str(total_comments), ColorScheme.COUNT)})"
+            separator = colorize("=" * width, ColorScheme.HEADER)
+        else:
+            page_info = f"Page {current_page} of {total_pages} (Total comments: {total_comments})"
+            separator = "=" * width
+        
+        print(page_info)
+        print(separator)
+        
+        # Display comments for the current page
+        has_comments = display_page_of_comments(
+            flat_comments, indent_levels, page_size, current_page, width
+        )
+        
+        # Display navigation options
+        show_navigation_options(current_page, total_pages, sort_order)
+        
+        # Get navigation key and process
+        nav = get_navigation_key(total_pages)
+        
+        if nav['action'] == 'prev-page' and current_page > 1:
+            current_page -= 1
+        elif nav['action'] == 'next-page' and current_page < total_pages:
+            current_page += 1
+        elif nav['action'] == 'first-page':
+            current_page = 1
+        elif nav['action'] == 'last-page':
+            current_page = total_pages
+        elif nav['action'] == 'goto':
+            page = nav['page']
+            if 1 <= page <= total_pages:
+                current_page = page
+        elif nav['action'] == 'change-sort':
+            # Cycle through sort orders
+            if sort_order == CommentSortOrder.DEFAULT:
+                sort_order = CommentSortOrder.NEWEST_FIRST
+            elif sort_order == CommentSortOrder.NEWEST_FIRST:
+                sort_order = CommentSortOrder.OLDEST_FIRST
+            else:
+                sort_order = CommentSortOrder.DEFAULT
+            
+            needs_resort = True
+        elif nav['action'] == 'quit':
+            break
+        elif nav['action'] == 'invalid':
+            # Invalid key, show a brief error message
+            if USE_COLORS:
+                error = colorize("Invalid key. Press any key to continue...", ColorScheme.ERROR)
+            else:
+                error = "Invalid key. Press any key to continue..."
+            
+            print(f"\n{error}")
+            getch()  # Wait for any key before continuing
+    
+    return (total_pages, current_page, total_comments)
         
 def should_view_comments():
     """Ask the user if they want to view the comments after exporting."""

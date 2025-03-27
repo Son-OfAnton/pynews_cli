@@ -51,6 +51,28 @@
       "issue_comment": "Model A broke the existing comments fetching feature. Model B fixed the export issue. But the `-c` flag is not working while being useda alone.",
       "issue_source": "",
       "comment": ""
+		},
+    {
+			"prompt": "The exporting functionality is working now. But the `-c` flag is not working while being used alone. Please fix it.",
+			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
+			"choice": 3,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "",
+      "issue_comment": "Model B exports the comments and lists the comments when the `-c` flag is used alone. Model A failed to export the comments. However, model throws the error `Error: object of type 'NoneType' has no len()`.",
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+			"prompt": "Even though the comments are being exported now and the `-c` flag is working when used alone. The error message `Error: object of type 'NoneType' has no len()` is still being shown comments are exported. Please fix it.",
+			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
+			"choice": 3,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "",
+      "issue_comment": "Model B exports the comments and lists the comments when the `-c` flag is used alone. Model A failed to export the comments. However, model throws the error `Error: object of type 'NoneType' has no len()`.",
+      "issue_source": "",
+      "comment": ""
 		}
   ]
 }
