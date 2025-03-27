@@ -16,7 +16,7 @@ import csv
 
 from .constants import URLS
 from .loading import with_loading, with_progress, LoadingIndicator, ProgressBar, IndeterminateProgressBar
-from .colors import ColorScheme, colorize, supports_color, Colors  # Added Colors here
+from .colors import ColorScheme, colorize, supports_color, Colors  # Make sure to import Colors
 from .getch import getch
 from .exporters import export_comments_to_json, export_comments_to_csv
 
@@ -573,6 +573,11 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
         page_size: Number of comments to display per page
         page_num: Which page of comments to display (1-indexed)
         width: Display width for wrapping comments
+        export_json: Whether to export comments to JSON format
+        export_csv: Whether to export comments to CSV format
+        export_path: Path to save exported files (defaults to current dir)
+        export_filename: Custom filename for exports (without extension)
+        include_timestamp: Whether to include timestamp in filename
         
     Returns:
         tuple: (total_pages, current_page_num, total_comments)
@@ -602,257 +607,117 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
     sort_order = CommentSortOrder.DEFAULT
     needs_resort = False
     
-    while True:
-        clear_screen()
-        
-        # Display story information
+    # Process export options
+    should_export = export_json or export_csv
+    
+    if should_export:
+        # Fetch comments for export
+        message = "Retrieving comments for export..."
         if USE_COLORS:
-            title = colorize(f"\n=== Comments for: {story.get('title', 'Unknown Story')} ===", 
-                           ColorScheme.TITLE)
-            author_line = f"By {colorize(story.get('by', 'Unknown'), ColorScheme.AUTHOR)} · {format_timestamp(story.get('time', 0))}"
-            points = colorize(str(story.get('score', 0)), ColorScheme.POINTS)
-            url = story.get('url', '[No URL]')
-            if url != '[No URL]':
-                url = colorize(url, ColorScheme.URL)
-            info_line = f"Points: {points} · URL: {url}\n"
+            message = colorize(message, ColorScheme.INFO)
+        print(message)
+        
+        # Create a progress bar for fetching comments
+        progress_bar = ProgressBar(
+            total=100, 
+            prefix="Fetching Comments:",
+            suffix="Complete", 
+            length=50
+        )
+        progress_bar.start()
+        
+        try:
+            # Fetch comment tree for the story
+            comment_ids = story.get('kids', [])
+            comment_tree = fetch_comment_tree(
+                comment_ids, 
+                max_threads=10,
+                progress_callback=progress_bar.update
+            )
+        finally:
+            progress_bar.stop()
+        
+        # Handle exports
+        # Prepare export path
+        if export_path is None:
+            export_path = os.getcwd()  # Use current directory
         else:
-            title = f"\n=== Comments for: {story.get('title', 'Unknown Story')} ==="
-            author_line = f"By {story.get('by', 'Unknown')} · {format_timestamp(story.get('time', 0))}"
-            info_line = f"Points: {story.get('score', 0)} · URL: {story.get('url', '[No URL]')}\n"
-        
-        print(title)
-        print(author_line)
-        print(info_line)
-        
-        # Check if the story has comments
-        comment_ids = story.get('kids', [])
-        if not comment_ids:
-            message = "This story has no comments."
-            if USE_COLORS:
-                message = colorize(message, ColorScheme.INFO)
-            print(message)
+            # Create directory if it doesn't exist
+            os.makedirs(export_path, exist_ok=True)
             
-            prompt = "\nPress any key to quit..."
+        # Make sure export_path is an absolute path
+        export_path = os.path.abspath(export_path)
+        
+        # Set base filename
+        base_filename = export_filename or f"hn_story_{story_id}_comments"
+        
+        # Export to JSON if requested
+        if export_json and comment_tree:
+            export_msg = "Exporting comments to JSON..."
+            if USE_COLORS:
+                export_msg = colorize(export_msg, ColorScheme.INFO)
+            print(export_msg)
+            
+            # Prepare filename
+            json_filename = os.path.join(export_path, f"{base_filename}.json")
+            if include_timestamp and not export_filename:
+                # Include timestamp in the auto-generated filename
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                json_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.json")
+                
+            # Export to JSON
+            try:
+                json_file = export_comments_to_json(comment_tree, story, json_filename)
+                success_msg = f"Comments exported to JSON: {json_file}"
+                if USE_COLORS:
+                    # Use a color that exists in the Colors class
+                    success_msg = colorize(success_msg, Colors.GREEN)
+                print(success_msg)
+            except Exception as e:
+                error_msg = f"Error exporting to JSON: {e}"
+                if USE_COLORS:
+                    error_msg = colorize(error_msg, ColorScheme.ERROR)
+                print(error_msg)
+        
+        # Export to CSV if requested
+        if export_csv and comment_tree:
+            export_msg = "Exporting comments to CSV..."
+            if USE_COLORS:
+                export_msg = colorize(export_msg, ColorScheme.INFO)
+            print(export_msg)
+            
+            # Prepare filename
+            csv_filename = os.path.join(export_path, f"{base_filename}.csv")
+            if include_timestamp and not export_filename:
+                # Include timestamp in the auto-generated filename
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                csv_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.csv")
+                
+            # Export to CSV
+            try:
+                csv_file = export_comments_to_csv(comment_tree, story, csv_filename)
+                success_msg = f"Comments exported to CSV: {csv_file}"
+                if USE_COLORS:
+                    # Use a color that exists in the Colors class
+                    success_msg = colorize(success_msg, Colors.GREEN)
+                print(success_msg)
+            except Exception as e:
+                error_msg = f"Error exporting to CSV: {e}"
+                if USE_COLORS:
+                    error_msg = colorize(error_msg, ColorScheme.ERROR)
+                print(error_msg)
+        
+        # If only exporting without displaying comments, return early
+        if not should_view_comments():
+            prompt = "\nExport completed. Press any key to exit..."
             if USE_COLORS:
                 prompt = colorize(prompt, ColorScheme.PROMPT)
             print(prompt)
             getch()  # Wait for any key
             return (0, 0, 0)
         
-        # Fetch and process comments if not already cached
-        if comment_tree is None:
-            message = f"Retrieving comments for this story..."
-            if USE_COLORS:
-                message = colorize(message, ColorScheme.INFO)
-            print(message)
-            
-            # Create a progress bar for fetching comments
-            progress_bar = ProgressBar(
-                total=100, 
-                prefix='Fetching Comments:',
-                suffix='Complete', 
-                length=50
-            )
-            progress_bar.start()
-            
-            try:
-                # Fetch comments with progress updates
-                comment_tree = fetch_comment_tree(
-                    comment_ids, 
-                    max_threads=10,
-                    progress_callback=progress_bar.update
-                )
-            finally:
-                progress_bar.stop()
-                
-            needs_resort = True
-            
-        # Re-sort if needed
-        if needs_resort:
-            message = f"Sorting comments ({get_sort_order_display(sort_order)})..."
-            if USE_COLORS:
-                message = colorize(message, ColorScheme.INFO)
-            print(message)
-            
-            # Create progress bar for sorting
-            sort_progress = ProgressBar(
-                total=100, 
-                prefix=f'Sorting ({get_sort_order_display(sort_order)}):',
-                suffix='Complete', 
-                length=50
-            )
-            sort_progress.start()
-            
-            try:
-                # Sort with progress updates
-                sorted_tree = sort_comment_tree(
-                    comment_tree, 
-                    sort_order,
-                    progress_callback=sort_progress.update
-                )
-            finally:
-                sort_progress.stop()
-            
-            # Create progress bar for flattening
-            flatten_progress = ProgressBar(
-                total=100, 
-                prefix='Organizing Comments:',
-                suffix='Complete', 
-                length=50
-            )
-            flatten_progress.start()
-            
-            try:
-                # Flatten with progress updates
-                flat_comments, indent_levels = flatten_comment_tree(
-                    sorted_tree,
-                    progress_callback=flatten_progress.update
-                )
-            finally:
-                flatten_progress.stop()
-            
-            total_comments = len(flat_comments)
-            total_pages = (total_comments + page_size - 1) // page_size
-            
-            # Validate page number
-            if current_page > total_pages and total_pages > 0:
-                current_page = total_pages
-            
-            needs_resort = False
-            
-        # Show pagination info
-        if USE_COLORS:
-            page_info = f"Page {colorize(str(current_page), ColorScheme.COUNT)} of " + \
-                       f"{colorize(str(total_pages), ColorScheme.COUNT)} " + \
-                       f"(Total comments: {colorize(str(total_comments), ColorScheme.COUNT)})"
-            separator = colorize("=" * width, ColorScheme.HEADER)
-        else:
-            page_info = f"Page {current_page} of {total_pages} (Total comments: {total_comments})"
-            separator = "=" * width
-        
-        print(page_info)
-        print(separator)
-        
-        # Display comments for the current page
-        has_comments = display_page_of_comments(
-            flat_comments, indent_levels, page_size, current_page, width
-        )
-        
-        # Display navigation options
-        show_navigation_options(current_page, total_pages, sort_order)
-        
-        # Get navigation key and process
-        nav = get_navigation_key(total_pages)
-        
-        if nav['action'] == 'prev-page' and current_page > 1:
-            current_page -= 1
-        elif nav['action'] == 'next-page' and current_page < total_pages:
-            current_page += 1
-        elif nav['action'] == 'first-page':
-            current_page = 1
-        elif nav['action'] == 'last-page':
-            current_page = total_pages
-        elif nav['action'] == 'goto':
-            page = nav['page']
-            if 1 <= page <= total_pages:
-                current_page = page
-        elif nav['action'] == 'change-sort':
-            # Cycle through sort orders
-            if sort_order == CommentSortOrder.DEFAULT:
-                sort_order = CommentSortOrder.NEWEST_FIRST
-            elif sort_order == CommentSortOrder.NEWEST_FIRST:
-                sort_order = CommentSortOrder.OLDEST_FIRST
-            else:
-                sort_order = CommentSortOrder.DEFAULT
-            
-            needs_resort = True
-        elif nav['action'] == 'quit':
-            break
-        elif nav['action'] == 'invalid':
-            # Invalid key, show a brief error message
-            if USE_COLORS:
-                error = colorize("Invalid key. Press any key to continue...", ColorScheme.ERROR)
-            else:
-                error = "Invalid key. Press any key to continue..."
-            
-            print(f"\n{error}")
-            getch()  # Wait for any key before continuing
-        
-        # Handle exports (if requested)
-        if (export_json or export_csv) and comment_tree:
-            # Prepare export file path and ensure it exists
-            if export_path is None:
-                export_path = os.getcwd()  # Use current directory
-            else:
-                # Fix: Create directory if it doesn't exist
-                os.makedirs(export_path, exist_ok=True)
-                
-            # Make sure export_path is an absolute path
-            export_path = os.path.abspath(export_path)
-                
-            base_filename = export_filename or f"hn_story_{story_id}_comments"
-            
-            # Export to JSON if requested
-            if export_json:
-                export_msg = "Exporting comments to JSON..."
-                if USE_COLORS:
-                    export_msg = colorize(export_msg, ColorScheme.INFO)
-                print(export_msg)
-                
-                json_filename = os.path.join(export_path, f"{base_filename}.json")
-                if include_timestamp and not export_filename:
-                    # Include timestamp in the auto-generated filename
-                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    json_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.json")
-                    
-                # Export to JSON
-                try:
-                    json_file = export_comments_to_json(comment_tree, story, json_filename)
-                    success_msg = f"Comments exported to JSON: {json_file}"
-                    if USE_COLORS:
-                        # Fix: Use BRIGHT_GREEN instead of SUCCESS which doesn't exist
-                        success_msg = colorize(success_msg, Colors.BRIGHT_GREEN)
-                    print(success_msg)
-                except Exception as e:
-                    error_msg = f"Error exporting to JSON: {e}"
-                    if USE_COLORS:
-                        error_msg = colorize(error_msg, ColorScheme.ERROR)
-                    print(error_msg)
-            
-                # Export to CSV if requested
-                if export_csv:
-                    export_msg = "Exporting comments to CSV..."
-                    if USE_COLORS:
-                        export_msg = colorize(export_msg, ColorScheme.INFO)
-                    print(export_msg)
-                    
-                    csv_filename = os.path.join(export_path, f"{base_filename}.csv")
-                    if include_timestamp and not export_filename:
-                        # Include timestamp in the auto-generated filename
-                        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                        csv_filename = os.path.join(export_path, f"{base_filename}_{timestamp}.csv")
-                        
-                    # Export to CSV
-                    try:
-                        csv_file = export_comments_to_csv(comment_tree, story, csv_filename)
-                        success_msg = f"Comments exported to CSV: {csv_file}"
-                        if USE_COLORS:
-                            # Fix: Use BRIGHT_GREEN instead of SUCCESS which doesn't exist
-                            success_msg = colorize(success_msg, Colors.BRIGHT_GREEN)
-                        print(success_msg)
-                    except Exception as e:
-                        error_msg = f"Error exporting to CSV: {e}"
-                        if USE_COLORS:
-                            error_msg = colorize(error_msg, ColorScheme.ERROR)
-                        print(error_msg)
-                    
-                # If exporting without displaying, give user a chance to read the export messages
-                if export_json or export_csv:
-                    prompt = "\nPress any key to continue..."
-                    if USE_COLORS:
-                        prompt = colorize(prompt, ColorScheme.PROMPT)
-                    print(prompt)
-                    getch()  # Wait for any key
-
-    
-    return (total_pages, current_page, total_comments)
+def should_view_comments():
+    """Ask the user if they want to view the comments after exporting."""
+    print("\nDo you want to view the comments? (y/n)")
+    choice = getch().lower()
+    return choice == 'y'

@@ -40,6 +40,17 @@
       "issue_comment": "Both models removed the error log. However, the exporting functionality is broked now. Model B forgot to add the variable `base_filename` to name the file too.",
       "issue_source": "",
       "comment": ""
+		},
+    {
+			"prompt": "Even though the error log is removed now. The exporting functionality has stopped working now.",
+			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
+			"choice": 3,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "",
+      "issue_comment": "Model A broke the existing comments fetching feature. Model B fixed the export issue. But the `-c` flag is not working while being useda alone.",
+      "issue_source": "",
+      "comment": ""
 		}
   ]
 }

@@ -147,19 +147,14 @@ def export_comments_to_json(comments, story_info, output_file=None):
             prepare_comment_for_export(comment)
         )
     
-    # Fix: Ensure absolute path and create directory if needed
-    output_path = os.path.abspath(output_file)
-    os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
+    # Fix: Ensure directory exists
+    os.makedirs(os.path.dirname(os.path.abspath(output_file)) or '.', exist_ok=True)
     
     # Write the data to the JSON file
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(export_data, f, indent=2, ensure_ascii=False)
-    
-    # Verify file was created
-    if not os.path.exists(output_path):
-        raise IOError(f"Failed to create file at {output_path}")
         
-    return output_path
+    return os.path.abspath(output_file)
 
 
 def export_comments_to_csv(comments, story_info, output_file=None):
@@ -187,12 +182,11 @@ def export_comments_to_csv(comments, story_info, output_file=None):
     # CSV field names
     fieldnames = ['id', 'parent_id', 'by', 'text', 'time', 'deleted', 'dead']
     
-    # Fix: Ensure absolute path and create directory if needed
-    output_path = os.path.abspath(output_file)
-    os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
+    # Fix: Ensure directory exists
+    os.makedirs(os.path.dirname(os.path.abspath(output_file)) or '.', exist_ok=True)
     
     # Write to CSV file
-    with open(output_path, 'w', encoding='utf-8', newline='') as f:
+    with open(output_file, 'w', encoding='utf-8', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         
@@ -212,8 +206,4 @@ def export_comments_to_csv(comments, story_info, output_file=None):
         for comment in flattened_comments:
             writer.writerow(comment)
     
-    # Verify file was created
-    if not os.path.exists(output_path):
-        raise IOError(f"Failed to create file at {output_path}")
-        
-    return output_path
+    return os.path.abspath(output_file)
