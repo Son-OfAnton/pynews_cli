@@ -73,6 +73,17 @@
       "issue_comment": "Model B exports the comments and lists the comments when the `-c` flag is used alone. Model A failed to export the comments. However, model throws the error `Error: object of type 'NoneType' has no len()`.",
       "issue_source": "",
       "comment": ""
+		},
+    {
+      "prompt": "Generate tests for exporting functionality.",
+			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "",
+      "issue_comment": "",
+      "issue_source": "",
+      "comment": ""
 		}
   ]
 }

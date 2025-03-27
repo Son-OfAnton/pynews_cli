@@ -567,6 +567,7 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
     Display comments for a given story with interactive pagination support.
     Now using single-keystroke navigation without pressing Enter.
     Supports multi-digit page numbers and comment sorting.
+    Also supports exporting comments to JSON or CSV.
     
     Args:
         story_id: The ID of the story to show comments for
@@ -597,6 +598,21 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
         print(error_msg)
         return (0, 0, 0)
     
+    # Check if the story has comments
+    comment_ids = story.get('kids', [])
+    if not comment_ids:
+        message = "This story has no comments."
+        if USE_COLORS:
+            message = colorize(message, ColorScheme.INFO)
+        print(message)
+        
+        prompt = "\nPress any key to quit..."
+        if USE_COLORS:
+            prompt = colorize(prompt, ColorScheme.PROMPT)
+        print(prompt)
+        getch()  # Wait for any key
+        return (0, 0, 0)
+    
     # Initialize cached data
     comment_tree = None
     flat_comments = None
@@ -609,36 +625,43 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
     
     # Process export options
     should_export = export_json or export_csv
-    export_only = should_export and os.environ.get('PYNEWS_EXPORT_ONLY', '0') == '1'
     
+    # Fetch comments (needed for both export and viewing)
+    message = "Retrieving comments for this story..."
     if should_export:
-        # Fetch comments for export
-        message = "Retrieving comments for export..."
-        if USE_COLORS:
-            message = colorize(message, ColorScheme.INFO)
-        print(message)
-        
-        # Create a progress bar for fetching comments
-        progress_bar = ProgressBar(
-            total=100, 
-            prefix="Fetching Comments:",
-            suffix="Complete", 
-            length=50
+        message = "Retrieving comments for export and viewing..."
+    
+    if USE_COLORS:
+        message = colorize(message, ColorScheme.INFO)
+    print(message)
+    
+    # Create a progress bar for fetching comments
+    progress_bar = ProgressBar(
+        total=100, 
+        prefix='Fetching Comments:',
+        suffix='Complete', 
+        length=50
+    )
+    progress_bar.start()
+    
+    try:
+        # Fetch comments with progress updates
+        comment_tree = fetch_comment_tree(
+            comment_ids, 
+            max_threads=10,
+            progress_callback=progress_bar.update
         )
-        progress_bar.start()
+    finally:
+        progress_bar.stop()
+    
+    # Make sure comment_tree is not None to avoid errors
+    if comment_tree is None:
+        comment_tree = []
+    
+    needs_resort = True
         
-        try:
-            # Fetch comment tree for the story
-            comment_ids = story.get('kids', [])
-            comment_tree = fetch_comment_tree(
-                comment_ids, 
-                max_threads=10,
-                progress_callback=progress_bar.update
-            )
-        finally:
-            progress_bar.stop()
-        
-        # Handle exports
+    # Handle exports if requested
+    if should_export and comment_tree:  # Only try to export if we have comments
         # Prepare export path
         if export_path is None:
             export_path = os.getcwd()  # Use current directory
@@ -653,7 +676,7 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
         base_filename = export_filename or f"hn_story_{story_id}_comments"
         
         # Export to JSON if requested
-        if export_json and comment_tree:
+        if export_json:
             export_msg = "Exporting comments to JSON..."
             if USE_COLORS:
                 export_msg = colorize(export_msg, ColorScheme.INFO)
@@ -681,7 +704,7 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
                 print(error_msg)
         
         # Export to CSV if requested
-        if export_csv and comment_tree:
+        if export_csv:
             export_msg = "Exporting comments to CSV..."
             if USE_COLORS:
                 export_msg = colorize(export_msg, ColorScheme.INFO)
@@ -708,17 +731,15 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
                     error_msg = colorize(error_msg, ColorScheme.ERROR)
                 print(error_msg)
         
-        # If export was requested, ask if user wants to view comments
-        # BUT ONLY if both export options were specified and not viewing
-        if should_export and not comment_tree:
-            prompt = "\nExport completed. Press any key to exit..."
+        # Give user a moment to read the export messages
+        if export_json or export_csv:
+            prompt = "\nPress any key to continue to comment view..."
             if USE_COLORS:
                 prompt = colorize(prompt, ColorScheme.PROMPT)
             print(prompt)
             getch()  # Wait for any key
-            return (0, 0, 0)
     
-    # Continue with the regular comment viewing (this runs for both export+view and view only)
+    # Continue with the regular comment viewing loop
     while True:
         clear_screen()
         
@@ -741,52 +762,8 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
         print(author_line)
         print(info_line)
         
-        # Check if the story has comments
-        comment_ids = story.get('kids', [])
-        if not comment_ids:
-            message = "This story has no comments."
-            if USE_COLORS:
-                message = colorize(message, ColorScheme.INFO)
-            print(message)
-            
-            prompt = "\nPress any key to quit..."
-            if USE_COLORS:
-                prompt = colorize(prompt, ColorScheme.PROMPT)
-            print(prompt)
-            getch()  # Wait for any key
-            return (0, 0, 0)
-        
-        # Fetch and process comments if not already cached
-        if comment_tree is None:
-            message = f"Retrieving comments for this story..."
-            if USE_COLORS:
-                message = colorize(message, ColorScheme.INFO)
-            print(message)
-            
-            # Create a progress bar for fetching comments
-            progress_bar = ProgressBar(
-                total=100, 
-                prefix='Fetching Comments:',
-                suffix='Complete', 
-                length=50
-            )
-            progress_bar.start()
-            
-            try:
-                # Fetch comments with progress updates
-                comment_tree = fetch_comment_tree(
-                    comment_ids, 
-                    max_threads=10,
-                    progress_callback=progress_bar.update
-                )
-            finally:
-                progress_bar.stop()
-                
-            needs_resort = True
-            
-        # Rest of original display_comments_for_story function continues here...
         # Re-sort if needed
-        if needs_resort:
+        if needs_resort and comment_tree:
             message = f"Sorting comments ({get_sort_order_display(sort_order)})..."
             if USE_COLORS:
                 message = colorize(message, ColorScheme.INFO)
@@ -829,14 +806,37 @@ def display_comments_for_story(story_id, page_size=10, page_num=1, width=80, exp
             finally:
                 flatten_progress.stop()
             
-            total_comments = len(flat_comments)
-            total_pages = (total_comments + page_size - 1) // page_size
-            
-            # Validate page number
-            if current_page > total_pages and total_pages > 0:
-                current_page = total_pages
+            # Update pagination data
+            if flat_comments:  # Make sure flat_comments is not None
+                total_comments = len(flat_comments)
+                total_pages = (total_comments + page_size - 1) // page_size
+                
+                # Validate page number
+                if current_page > total_pages and total_pages > 0:
+                    current_page = total_pages
+            else:
+                # Handle case where flattening produced no comments
+                total_comments = 0
+                total_pages = 0
+                current_page = 1
+                flat_comments = []
+                indent_levels = {}
             
             needs_resort = False
+        
+        # Check if we have comments to display
+        if not flat_comments or total_comments == 0:
+            message = "No comments to display."
+            if USE_COLORS:
+                message = colorize(message, ColorScheme.INFO)
+            print(message)
+            
+            prompt = "\nPress any key to quit..."
+            if USE_COLORS:
+                prompt = colorize(prompt, ColorScheme.PROMPT)
+            print(prompt)
+            getch()  # Wait for any key
+            return (0, 0, 0)
             
         # Show pagination info
         if USE_COLORS:
