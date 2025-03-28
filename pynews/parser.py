@@ -452,6 +452,61 @@ def get_parser_options() -> argparse.Namespace:
         help="Show a notification when new comments are found during auto-refresh",
     )
 
+    parser.add_argument(
+        "--ask-auto-refresh",
+        action="store_true",
+        help="Enable background fetching of new comments for Ask HN stories",
+    )
+
+    parser.add_argument(
+        "--ask-refresh-interval",
+        type=int,
+        default=5,
+        help="Interval in seconds between comment updates for Ask HN stories (default: 60)",
+    )
+
+    parser.add_argument(
+        "--ask-dashboard",
+        action="store_true",
+        help="Launch the Ask HN discussions dashboard with live updates",
+    )
+
+    parser.add_argument(
+        "--dashboard-stories",
+        nargs="+",
+        type=int,
+        metavar="STORY_ID",
+        help="Story IDs to initially include in the dashboard",
+    )
+
+    parser.add_argument(
+        "--job-auto-refresh",
+        action="store_true",
+        help="Enable background fetching of new comments for job listings",
+    )
+
+    parser.add_argument(
+        "--job-refresh-interval",
+        type=int,
+        default=60,
+        help="Interval in seconds between comment updates for job listings (default: 60)",
+    )
+
+    parser.add_argument(
+        "--job-dashboard",
+        action="store_true",
+        help="Launch the job listings discussion dashboard with live updates",
+    )
+
+    parser.add_argument(
+        "--job-dashboard-ids",
+        nargs="+",
+        type=int,
+        metavar="JOB_ID",
+        help="Job listing IDs to initially include in the dashboard",
+    )
+
+
     options = parser.parse_args()
 
     # If --ask-discussed is used, set sort_by_comments to True

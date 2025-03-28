@@ -7,7 +7,11 @@ import os
 import html
 import datetime
 import re
+import time
 from webbrowser import open as url_open
+import threading
+import queue
+from .comments import BackgroundCommentFetcher, display_comments_for_story, fetch_item
 
 from .colors import Colors, ColorScheme, colorize, supports_color
 from .getch import getch
@@ -444,3 +448,470 @@ def display_top_scored_ask_stories(limit=10, min_score=0, sort_by_comments=False
                 print(colorize("\nInvalid option. Please try again.", ColorScheme.ERROR))
             else:
                 print("\nInvalid option. Please try again.")
+
+# Add this new function to handle displaying ask story details with background comment fetching
+def display_ask_story_details_with_live_comments(story_id, auto_refresh=False, refresh_interval=60, notify_new_comments=False, page_size=10, width=80):
+    """
+    Display details of an Ask HN story with option to view comments that update in the background.
+    
+    Args:
+        story_id: ID of the Ask HN story to display
+        auto_refresh: Whether to refresh comments in background
+        refresh_interval: Seconds between comment refreshes
+        notify_new_comments: Whether to show notifications for new comments
+        page_size: Number of comments to display per page
+        width: Display width for comments
+        
+    Returns:
+        Dict with action and parameters, or None
+    """
+    # Reuse the existing function for initial display
+    result = display_ask_story_details(story_id)
+    
+    # Check if user wants to view comments
+    if result and result.get('action') == 'view_comments':
+        # Use the enhanced comments display with background fetching
+        display_comments_for_story(
+            story_id,
+            page_size=page_size,
+            width=width,
+            auto_refresh=auto_refresh,
+            refresh_interval=refresh_interval,
+            notify_new_comments=notify_new_comments
+        )
+    
+    return result
+
+class AskStoryMonitor:
+    """
+    Class to monitor multiple Ask HN stories for new comments in the background.
+    This provides a dashboard-like functionality for tracking active discussions.
+    """
+    
+    def __init__(self, story_ids=None, refresh_interval=60):
+        """
+        Initialize the Ask HN story monitor.
+        
+        Args:
+            story_ids: List of story IDs to monitor (can be empty and added later)
+            refresh_interval: Refresh interval in seconds
+        """
+        self.story_ids = set(story_ids or [])
+        self.refresh_interval = max(refresh_interval, 10)
+        self.running = False
+        self.thread = None
+        self.story_data_lock = threading.Lock()
+        self.story_data = {}  # Dict mapping story_id to story data
+        self.new_comments = {}  # Dict mapping story_id to count of new comments
+        
+    def start(self):
+        """
+        Start the background monitoring thread.
+        
+        Returns:
+            bool: True if started, False if already running
+        """
+        if self.running:
+            return False
+            
+        # Fetch initial data for all stories
+        self._fetch_initial_data()
+        
+        # Start background thread
+        self.running = True
+        self.thread = threading.Thread(target=self._background_monitor, daemon=True)
+        self.thread.start()
+        return True
+    
+    def stop(self):
+        """
+        Stop the background monitoring thread.
+        
+        Returns:
+            bool: True if stopped, False if not running
+        """
+        if not self.running:
+            return False
+            
+        self.running = False
+        if self.thread:
+            self.thread.join(timeout=1.0)  # Wait up to 1 second for thread to exit
+            self.thread = None
+        return True
+    
+    def add_story(self, story_id):
+        """
+        Add a story to the monitor.
+        
+        Args:
+            story_id: ID of story to add
+            
+        Returns:
+            bool: True if added, False if already being monitored
+        """
+        if story_id in self.story_ids:
+            return False
+            
+        with self.story_data_lock:
+            self.story_ids.add(story_id)
+            
+            # Fetch initial data for this story
+            story = fetch_item(story_id)
+            if story:
+                comment_count = len(story.get('kids', []))
+                
+                self.story_data[story_id] = {
+                    'title': story.get('title', 'Unknown'),
+                    'by': story.get('by', 'Unknown'),
+                    'time': story.get('time', 0),
+                    'score': story.get('score', 0),
+                    'descendants': story.get('descendants', 0),
+                    'comment_ids': set(story.get('kids', [])),
+                    'last_comment_count': comment_count
+                }
+                self.new_comments[story_id] = 0
+            
+        return True
+    
+    def remove_story(self, story_id):
+        """
+        Remove a story from the monitor.
+        
+        Args:
+            story_id: ID of story to remove
+            
+        Returns:
+            bool: True if removed, False if not being monitored
+        """
+        if story_id not in self.story_ids:
+            return False
+            
+        with self.story_data_lock:
+            self.story_ids.remove(story_id)
+            if story_id in self.story_data:
+                del self.story_data[story_id]
+            if story_id in self.new_comments:
+                del self.new_comments[story_id]
+            
+        return True
+        
+    def get_all_stories(self):
+        """
+        Get all currently monitored stories with their data.
+        
+        Returns:
+            dict: Mapping of story_id to story data including new comment counts
+        """
+        with self.story_data_lock:
+            # Create a deep copy to avoid thread safety issues
+            result = {}
+            for story_id, data in self.story_data.items():
+                result[story_id] = dict(data)
+                result[story_id]['new_comments'] = self.new_comments.get(story_id, 0)
+                
+        return result
+    
+    def get_story(self, story_id):
+        """
+        Get data for a specific story including new comment count.
+        
+        Args:
+            story_id: ID of the story to get data for
+            
+        Returns:
+            dict: Story data with new comment count, or None if not found
+        """
+        with self.story_data_lock:
+            if story_id not in self.story_data:
+                return None
+                
+            result = dict(self.story_data[story_id])
+            result['new_comments'] = self.new_comments.get(story_id, 0)
+            
+        return result
+    
+    def acknowledge_new_comments(self, story_id):
+        """
+        Acknowledge and clear new comment notification for a story.
+        
+        Args:
+            story_id: ID of the story to acknowledge
+            
+        Returns:
+            bool: True if successful, False if story not found
+        """
+        with self.story_data_lock:
+            if story_id not in self.new_comments:
+                return False
+                
+            self.new_comments[story_id] = 0
+            
+        return True
+    
+    def _fetch_initial_data(self):
+        """Fetch initial data for all stories in the monitor."""
+        with self.story_data_lock:
+            for story_id in list(self.story_ids):
+                story = fetch_item(story_id)
+                if not story:
+                    self.story_ids.remove(story_id)
+                    continue
+                    
+                comment_count = len(story.get('kids', []))
+                
+                self.story_data[story_id] = {
+                    'title': story.get('title', 'Unknown'),
+                    'by': story.get('by', 'Unknown'),
+                    'time': story.get('time', 0),
+                    'score': story.get('score', 0),
+                    'descendants': story.get('descendants', 0),
+                    'comment_ids': set(story.get('kids', [])),
+                    'last_comment_count': comment_count
+                }
+                self.new_comments[story_id] = 0
+    
+    def _background_monitor(self):
+        """Background thread function to monitor stories for new comments."""
+        while self.running:
+            try:
+                # Sleep to avoid excessive API requests
+                time.sleep(self.refresh_interval)
+                
+                if not self.running:  # Check if we should exit
+                    break
+                    
+                # Make a copy of story IDs to avoid thread safety issues
+                with self.story_data_lock:
+                    story_ids_to_check = list(self.story_ids)
+                
+                # Check each story for updates
+                for story_id in story_ids_to_check:
+                    if not self.running:  # Check if we should exit
+                        break
+                        
+                    updated_story = fetch_item(story_id)
+                    if not updated_story:
+                        continue
+                        
+                    with self.story_data_lock:
+                        # Skip if story was removed while we were checking
+                        if story_id not in self.story_data:
+                            continue
+                            
+                        # Get current data
+                        current_data = self.story_data[story_id]
+                        
+                        # Get updated comment IDs
+                        updated_comment_ids = set(updated_story.get('kids', []))
+                        current_comment_ids = current_data.get('comment_ids', set())
+                        
+                        # Calculate new comments
+                        new_comments = updated_comment_ids - current_comment_ids
+                        new_count = len(new_comments)
+                        
+                        # Update data if there are changes
+                        if new_count > 0:
+                            # Update stored data
+                            current_data['comment_ids'] = updated_comment_ids
+                            current_data['descendants'] = updated_story.get('descendants', 0)
+                            current_data['last_comment_count'] = len(updated_comment_ids)
+                            
+                            # Increment the new comments counter
+                            self.new_comments[story_id] = self.new_comments.get(story_id, 0) + new_count
+            except Exception as e:
+                # Log error but continue running
+                print(f"Background Ask stories monitor error: {e}")
+
+def display_ask_discussions_dashboard(
+    initial_stories=None, auto_refresh=True, refresh_interval=60, 
+    page_size=10, width=80, notify_new_comments=True
+):
+    """
+    Display a dashboard of active Ask HN discussions with live updates.
+    
+    Args:
+        initial_stories: List of story IDs to initially monitor
+        auto_refresh: Whether to auto-refresh stories
+        refresh_interval: Refresh interval in seconds
+        page_size: Number of discussion items to show per page
+        width: Display width
+        notify_new_comments: Whether to show notifications
+        
+    Returns:
+        int: Return code (0 for success)
+    """
+    # Initialize the story monitor
+    monitor = AskStoryMonitor(
+        story_ids=initial_stories,
+        refresh_interval=refresh_interval
+    )
+    
+    # If no initial stories provided, fetch top Ask stories
+    if not initial_stories:
+        # Fetch top Ask stories
+        ask_stories = get_top_ask_stories(20)  # Get top 20
+        for story in ask_stories:
+            monitor.add_story(story['id'])
+    
+    # Start the monitor
+    monitor.start()
+    
+    try:
+        # Main display loop
+        current_page = 1
+        selected_idx = 0
+        
+        while True:
+            clear_screen()
+            
+            # Get the latest story data
+            stories_data = monitor.get_all_stories()
+            stories_list = list(stories_data.items())
+            
+            # Sort by new comments (most active discussions first)
+            stories_list.sort(
+                key=lambda x: (x[1]['new_comments'], x[1]['descendants']), 
+                reverse=True
+            )
+            
+            # Calculate pagination
+            total_stories = len(stories_list)
+            total_pages = max(1, (total_stories + page_size - 1) // page_size)
+            
+            if current_page > total_pages:
+                current_page = total_pages
+                
+            # Get slice for current page
+            start_idx = (current_page - 1) * page_size
+            end_idx = min(start_idx + page_size, total_stories)
+            page_stories = stories_list[start_idx:end_idx]
+            
+            # Display header
+            if USE_COLORS:
+                title = colorize("\n===== Active Ask HN Discussions Dashboard =====", ColorScheme.TITLE)
+            else:
+                title = "\n===== Active Ask HN Discussions Dashboard ====="
+            
+            status = f"Page {current_page}/{total_pages} | " + \
+                     f"Monitoring {total_stories} discussions | " + \
+                     f"Auto-refresh: {refresh_interval}s"
+                     
+            if USE_COLORS:
+                status = colorize(status, ColorScheme.INFO)
+            
+            print(title)
+            print(status)
+            print("=" * width)
+            
+            # Display the stories on current page
+            for idx, (story_id, data) in enumerate(page_stories):
+                # Calculate display index
+                display_idx = start_idx + idx
+                
+                # Format the entry
+                is_selected = (display_idx == selected_idx)
+                prefix = ">" if is_selected else " "
+                
+                # Format title with new comment indicator
+                story_title = data['title']
+                if data['new_comments'] > 0:
+                    new_indicator = f" [+{data['new_comments']} new]"
+                    if USE_COLORS:
+                        new_indicator = colorize(new_indicator, Colors.GREEN)
+                    story_title += new_indicator
+                
+                if USE_COLORS:
+                    title_text = colorize(story_title, ColorScheme.TITLE if is_selected else ColorScheme.HEADER)
+                    author = colorize(data['by'], ColorScheme.AUTHOR)
+                    score = colorize(str(data['score']), ColorScheme.POINTS)
+                    comments = colorize(str(data['descendants']), ColorScheme.COUNT)
+                else:
+                    title_text = story_title
+                    author = data['by']
+                    score = str(data['score'])
+                    comments = str(data['descendants'])
+                
+                # Format timestamp
+                timestamp = format_timestamp(data['time'])
+                
+                # Print the entry
+                print(f"{prefix} {display_idx+1}. {title_text}")
+                print(f"   By {author} | Score: {score} | Comments: {comments} | {timestamp}")
+                print()
+            
+            # Display navigation
+            print("=" * width)
+            print("Navigation:")
+            print("- [up/down] Move selection | [enter] View selected discussion")
+            print("- [left/right] Change page | [r] Refresh now")
+            print("- [a] Add new story to monitor | [d] Remove selected story")
+            print("- [q] Quit dashboard")
+            
+            # Get user input
+            key = getch().lower()
+            
+            # Handle navigation
+            if key == 'q':
+                break
+            elif key == 'r':
+                # Just continue to refresh
+                continue
+            elif key == 'a':
+                # Prompt for story ID to add
+                print("\nEnter story ID to add to monitor:")
+                try:
+                    new_id = int(input("> "))
+                    monitor.add_story(new_id)
+                    print(f"Added story {new_id} to monitor.")
+                    time.sleep(1)  # Brief pause
+                except (ValueError, KeyboardInterrupt):
+                    print("Cancelled or invalid input.")
+                    time.sleep(1)
+            elif key == 'd':
+                # Remove selected story
+                if stories_list and 0 <= selected_idx < len(stories_list):
+                    story_id = stories_list[selected_idx][0]
+                    monitor.remove_story(story_id)
+                    # Adjust selection to avoid going out of bounds
+                    if selected_idx >= len(stories_list) - 1:
+                        selected_idx = max(0, len(stories_list) - 2)
+            elif key in ('\x1b[A', 'k'):  # Up arrow or 'k'
+                selected_idx = max(0, selected_idx - 1)
+                # Handle page change if selection moves off current page
+                if selected_idx < start_idx:
+                    current_page = max(1, current_page - 1)
+            elif key in ('\x1b[B', 'j'):  # Down arrow or 'j'
+                selected_idx = min(total_stories - 1, selected_idx + 1)
+                # Handle page change if selection moves off current page
+                if selected_idx >= end_idx:
+                    current_page = min(total_pages, current_page + 1)
+            elif key in ('\x1b[D', 'h'):  # Left arrow or 'h'
+                current_page = max(1, current_page - 1)
+                # Adjust selection to be on the new page
+                selected_idx = (current_page - 1) * page_size
+            elif key in ('\x1b[C', 'l'):  # Right arrow or 'l'
+                current_page = min(total_pages, current_page + 1)
+                # Adjust selection to be on the new page
+                selected_idx = (current_page - 1) * page_size
+            elif key in ('\r', '\n', ' '):  # Enter or Space
+                # View the selected story
+                if stories_list and 0 <= selected_idx < len(stories_list):
+                    story_id = stories_list[selected_idx][0]
+                    
+                    # Clear new comments notification for this story
+                    monitor.acknowledge_new_comments(story_id)
+                    
+                    # View the story with comment auto-refresh
+                    display_ask_story_details_with_live_comments(
+                        story_id,
+                        auto_refresh=auto_refresh,
+                        refresh_interval=refresh_interval,
+                        notify_new_comments=notify_new_comments,
+                        page_size=page_size,
+                        width=width
+                    )
+    finally:
+        # Clean up
+        monitor.stop()
+        
+    return 0

@@ -2,17 +2,23 @@
 Module for simple display of job listings from Hacker News with arrow key navigation
 and keyword filtering.
 """
+import html
 import os
 import datetime
 import re
 import sys
+import time
 import tty
 import termios
 from webbrowser import open as url_open
-
+import threading
+import queue
+from .comments import BackgroundCommentFetcher, display_comments_for_story, fetch_item, format_timestamp
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from .colors import Colors, ColorScheme, colorize, supports_color
 from .getch import getch
 from .utils import get_story, get_stories, format_time_ago
+from .loading import LoadingIndicator
 
 USE_COLORS = supports_color()
 
@@ -1105,3 +1111,741 @@ def display_job_listings(limit=20, page_size=10, sort_newest_first=True, sort_by
             current_page = 1
             selected_idx = 0
             total_pages = max(1, (len(jobs) + page_size - 1) // page_size)
+
+# Add a new function to handle job listings with live comments
+def display_job_details_with_live_comments(job_id, auto_refresh=False, refresh_interval=60, notify_new_comments=False, page_size=10, width=80):
+    """
+    Display details for a job listing with comments that update in the background.
+    
+    Args:
+        job_id: ID of the job listing
+        auto_refresh: Whether to auto-refresh comments
+        refresh_interval: Interval in seconds between updates
+        notify_new_comments: Whether to show notifications for new comments
+        page_size: Number of comments to show per page
+        width: Display width for formatting
+        
+    Returns:
+        Dict with action and parameters, or None
+    """
+    # Fetch the job data
+    job = fetch_item(job_id)
+    if not job:
+        error_msg = f"Error: Could not retrieve job with ID {job_id}"
+        if USE_COLORS:
+            error_msg = colorize(error_msg, ColorScheme.ERROR)
+        print(error_msg)
+        return None
+    
+    # Display the job details
+    clear_screen()
+    
+    # Format job title
+    if USE_COLORS:
+        title_text = colorize(f"\n=== {job.get('title', 'Job Listing')} ===", ColorScheme.TITLE)
+    else:
+        title_text = f"\n=== {job.get('title', 'Job Listing')} ==="
+    
+    print(title_text)
+    
+    # Format job information
+    if 'by' in job:
+        if USE_COLORS:
+            author = colorize(job['by'], ColorScheme.AUTHOR)
+        else:
+            author = job['by']
+        print(f"Posted by: {author}")
+    
+    # Format timestamp
+    if 'time' in job:
+        print(f"Posted: {format_timestamp(job.get('time', 0))}")
+    
+    # Format score
+    if 'score' in job:
+        if USE_COLORS:
+            score = colorize(str(job['score']), ColorScheme.POINTS)
+        else:
+            score = str(job['score'])
+        print(f"Score: {score}")
+    
+    # Format URL
+    if 'url' in job:
+        if USE_COLORS:
+            url = colorize(job['url'], ColorScheme.URL)
+        else:
+            url = job['url']
+        print(f"URL: {url}")
+    
+    # Format job description/text
+    if 'text' in job:
+        print("\n" + "-" * 40)
+        job_text = clean_html(job['text'])
+        print(job_text)
+        print("-" * 40)
+    
+    # Display information about comments
+    comment_ids = job.get('kids', [])
+    comment_count = len(comment_ids)
+    
+    comment_info = f"\nThis job listing has {comment_count} " + \
+                   ("comment" if comment_count == 1 else "comments")
+    if USE_COLORS:
+        comment_info = colorize(comment_info, ColorScheme.INFO)
+    print(comment_info)
+    
+    # Show options
+    print("\nOptions:")
+    print("1. View comments")
+    print("2. Return to job listings")
+    
+    while True:
+        choice = getch()
+        
+        if choice == '1':
+            # View comments with background refreshing
+            display_comments_for_story(
+                job_id,
+                page_size=page_size,
+                width=width,
+                auto_refresh=auto_refresh,
+                refresh_interval=refresh_interval,
+                notify_new_comments=notify_new_comments
+            )
+            return {'action': 'view_comments'}
+        
+        elif choice == '2':
+            return {'action': 'return_to_list'}
+        
+class JobMonitor:
+    """
+    Class to monitor multiple job listings for new comments in the background.
+    Provides a dashboard-like functionality for tracking discussions on job postings.
+    """
+    
+    def __init__(self, job_ids=None, refresh_interval=60):
+        """
+        Initialize the job listings monitor.
+        
+        Args:
+            job_ids: List of job listing IDs to monitor (can be empty and added later)
+            refresh_interval: Refresh interval in seconds
+        """
+        self.job_ids = set(job_ids or [])
+        self.refresh_interval = max(refresh_interval, 10)
+        self.running = False
+        self.thread = None
+        self.job_data_lock = threading.Lock()
+        self.job_data = {}  # Dict mapping job_id to job data
+        self.new_comments = {}  # Dict mapping job_id to count of new comments
+        
+    def start(self):
+        """Start the background monitoring thread."""
+        if self.running:
+            return False
+            
+        # Fetch initial data for all jobs
+        self._fetch_initial_data()
+        
+        # Start background thread
+        self.running = True
+        self.thread = threading.Thread(target=self._background_monitor, daemon=True)
+        self.thread.start()
+        return True
+    
+    def stop(self):
+        """Stop the background monitoring thread."""
+        if not self.running:
+            return False
+            
+        self.running = False
+        if self.thread:
+            self.thread.join(timeout=1.0)  # Wait up to 1 second for thread to exit
+            self.thread = None
+        return True
+    
+    def add_job(self, job_id):
+        """Add a job listing to the monitor."""
+        if job_id in self.job_ids:
+            return False
+            
+        with self.job_data_lock:
+            self.job_ids.add(job_id)
+            
+            # Fetch initial data for this job
+            job = fetch_item(job_id)
+            if job:
+                comment_count = len(job.get('kids', []))
+                
+                self.job_data[job_id] = {
+                    'title': job.get('title', 'Unknown Job'),
+                    'by': job.get('by', 'Unknown'),
+                    'time': job.get('time', 0),
+                    'score': job.get('score', 0),
+                    'url': job.get('url', ''),
+                    'comment_ids': set(job.get('kids', [])),
+                    'last_comment_count': comment_count
+                }
+                self.new_comments[job_id] = 0
+            
+        return True
+    
+    def remove_job(self, job_id):
+        """Remove a job listing from the monitor."""
+        if job_id not in self.job_ids:
+            return False
+            
+        with self.job_data_lock:
+            self.job_ids.remove(job_id)
+            if job_id in self.job_data:
+                del self.job_data[job_id]
+            if job_id in self.new_comments:
+                del self.new_comments[job_id]
+            
+        return True
+        
+    def get_all_jobs(self):
+        """Get all currently monitored jobs with their data."""
+        with self.job_data_lock:
+            # Create a deep copy to avoid thread safety issues
+            result = {}
+            for job_id, data in self.job_data.items():
+                result[job_id] = dict(data)
+                result[job_id]['new_comments'] = self.new_comments.get(job_id, 0)
+                
+        return result
+    
+    def get_job(self, job_id):
+        """Get data for a specific job including new comment count."""
+        with self.job_data_lock:
+            if job_id not in self.job_data:
+                return None
+                
+            result = dict(self.job_data[job_id])
+            result['new_comments'] = self.new_comments.get(job_id, 0)
+            
+        return result
+    
+    def acknowledge_new_comments(self, job_id):
+        """Acknowledge and clear new comment notification for a job."""
+        with self.job_data_lock:
+            if job_id not in self.new_comments:
+                return False
+                
+            self.new_comments[job_id] = 0
+            
+        return True
+    
+    def _fetch_initial_data(self):
+        """Fetch initial data for all jobs in the monitor."""
+        with self.job_data_lock:
+            for job_id in list(self.job_ids):
+                job = fetch_item(job_id)
+                if not job:
+                    self.job_ids.remove(job_id)
+                    continue
+                    
+                comment_count = len(job.get('kids', []))
+                
+                self.job_data[job_id] = {
+                    'title': job.get('title', 'Unknown Job'),
+                    'by': job.get('by', 'Unknown'),
+                    'time': job.get('time', 0),
+                    'score': job.get('score', 0),
+                    'url': job.get('url', ''),
+                    'comment_ids': set(job.get('kids', [])),
+                    'last_comment_count': comment_count
+                }
+                self.new_comments[job_id] = 0
+    
+    def _background_monitor(self):
+        """Background thread function to monitor jobs for new comments."""
+        while self.running:
+            try:
+                # Sleep to avoid excessive API requests
+                time.sleep(self.refresh_interval)
+                
+                if not self.running:  # Check if we should exit
+                    break
+                    
+                # Make a copy of job IDs to avoid thread safety issues
+                with self.job_data_lock:
+                    job_ids_to_check = list(self.job_ids)
+                
+                # Check each job for updates
+                for job_id in job_ids_to_check:
+                    if not self.running:  # Check if we should exit
+                        break
+                        
+                    updated_job = fetch_item(job_id)
+                    if not updated_job:
+                        continue
+                        
+                    with self.job_data_lock:
+                        # Skip if job was removed while we were checking
+                        if job_id not in self.job_data:
+                            continue
+                            
+                        # Get current data
+                        current_data = self.job_data[job_id]
+                        
+                        # Get updated comment IDs
+                        updated_comment_ids = set(updated_job.get('kids', []))
+                        current_comment_ids = current_data.get('comment_ids', set())
+                        
+                        # Calculate new comments
+                        new_comments = updated_comment_ids - current_comment_ids
+                        new_count = len(new_comments)
+                        
+                        # Update data if there are changes
+                        if new_count > 0:
+                            # Update stored data
+                            current_data['comment_ids'] = updated_comment_ids
+                            current_data['last_comment_count'] = len(updated_comment_ids)
+                            
+                            # Increment the new comments counter
+                            self.new_comments[job_id] = self.new_comments.get(job_id, 0) + new_count
+            except Exception as e:
+                # Log error but continue running
+                print(f"Background job listings monitor error: {e}")
+
+def display_jobs_discussion_dashboard(
+    initial_jobs=None, auto_refresh=True, refresh_interval=60, 
+    page_size=10, width=80, notify_new_comments=True
+):
+    """
+    Display a dashboard of job listings with discussion activity.
+    
+    Args:
+        initial_jobs: List of job IDs to initially monitor
+        auto_refresh: Whether to auto-refresh jobs
+        refresh_interval: Refresh interval in seconds
+        page_size: Number of jobs to show per page
+        width: Display width
+        notify_new_comments: Whether to show notifications
+        
+    Returns:
+        int: Return code (0 for success)
+    """
+    # Initialize the job monitor
+    monitor = JobMonitor(
+        job_ids=initial_jobs,
+        refresh_interval=refresh_interval
+    )
+    
+    # If no initial jobs provided, fetch recent job listings
+    if not initial_jobs:
+        # Fetch recent job listings
+        jobs = get_job_stories(20)  # Get 20 recent jobs
+        for job in jobs:
+            job_data = fetch_item(job)
+            # Only add jobs that have comments
+            if job_data and job_data.get('kids'):
+                monitor.add_job(job)
+    
+    # Start the monitor
+    monitor.start()
+    
+    try:
+        # Main display loop
+        current_page = 1
+        selected_idx = 0
+        
+        while True:
+            clear_screen()
+            
+            # Get the latest job data
+            jobs_data = monitor.get_all_jobs()
+            jobs_list = list(jobs_data.items())
+            
+            # Sort by new comments (most active discussions first)
+            jobs_list.sort(
+                key=lambda x: (x[1]['new_comments'], x[1]['last_comment_count']), 
+                reverse=True
+            )
+            
+            # Calculate pagination
+            total_jobs = len(jobs_list)
+            total_pages = max(1, (total_jobs + page_size - 1) // page_size)
+            
+            if current_page > total_pages:
+                current_page = total_pages
+                
+            # Get slice for current page
+            start_idx = (current_page - 1) * page_size
+            end_idx = min(start_idx + page_size, total_jobs)
+            page_jobs = jobs_list[start_idx:end_idx]
+            
+            # Display header
+            if USE_COLORS:
+                title = colorize("\n===== Job Listings Discussion Dashboard =====", ColorScheme.TITLE)
+            else:
+                title = "\n===== Job Listings Discussion Dashboard ====="
+            
+            status = f"Page {current_page}/{total_pages} | " + \
+                     f"Monitoring {total_jobs} job listings | " + \
+                     f"Auto-refresh: {refresh_interval}s"
+                     
+            if USE_COLORS:
+                status = colorize(status, ColorScheme.INFO)
+            
+            print(title)
+            print(status)
+            print("=" * width)
+            
+            # Display the jobs on current page
+            for idx, (job_id, data) in enumerate(page_jobs):
+                # Calculate display index
+                display_idx = start_idx + idx
+                
+                # Format the entry
+                is_selected = (display_idx == selected_idx)
+                prefix = ">" if is_selected else " "
+                
+                # Format title with new comment indicator
+                job_title = data['title']
+                if data['new_comments'] > 0:
+                    new_indicator = f" [+{data['new_comments']} new]"
+                    if USE_COLORS:
+                        new_indicator = colorize(new_indicator, Colors.GREEN)
+                    job_title += new_indicator
+                
+                if USE_COLORS:
+                    title_text = colorize(job_title, ColorScheme.TITLE if is_selected else ColorScheme.HEADER)
+                    if 'by' in data:
+                        author = colorize(data['by'], ColorScheme.AUTHOR)
+                    else:
+                        author = "Unknown"
+                else:
+                    title_text = job_title
+                    author = data.get('by', "Unknown")
+                
+                # Format timestamp
+                timestamp = format_timestamp(data['time'])
+                
+                # Format comment count
+                comment_count = len(data.get('comment_ids', []))
+                if USE_COLORS:
+                    comments = colorize(str(comment_count), ColorScheme.COUNT)
+                else:
+                    comments = str(comment_count)
+                
+                # Print the entry
+                print(f"{prefix} {display_idx+1}. {title_text}")
+                print(f"   Posted by: {author} | Comments: {comments} | {timestamp}")
+                if data.get('url'):
+                    url_text = data['url']
+                    if USE_COLORS:
+                        url_text = colorize(url_text, ColorScheme.URL)
+                    print(f"   URL: {url_text}")
+                print()
+            
+            # Display additional info if no jobs are being monitored
+            if not jobs_list:
+                info_msg = "\nNo job listings with comments are currently being monitored."
+                add_msg = "You can add job listings to monitor by pressing [a]."
+                if USE_COLORS:
+                    info_msg = colorize(info_msg, ColorScheme.INFO)
+                    add_msg = colorize(add_msg, ColorScheme.PROMPT)
+                print(info_msg)
+                print(add_msg)
+            
+            # Display navigation
+            print("=" * width)
+            print("Navigation:")
+            print("- [up/down] Move selection | [enter] View selected job listing")
+            print("- [left/right] Change page | [r] Refresh now")
+            print("- [a] Add new job listing to monitor | [d] Remove selected job")
+            print("- [n] Browse latest job listings")
+            print("- [q] Quit dashboard")
+            
+            # Get user input
+            key = getch().lower()
+            
+            # Handle navigation
+            if key == 'q':
+                break
+            elif key == 'r':
+                # Just continue to refresh
+                continue
+            elif key == 'a':
+                # Prompt for job ID to add
+                print("\nEnter job listing ID to add to monitor:")
+                try:
+                    new_id = int(input("> "))
+                    monitor.add_job(new_id)
+                    print(f"Added job listing {new_id} to monitor.")
+                    time.sleep(1)  # Brief pause
+                except (ValueError, KeyboardInterrupt):
+                    print("Cancelled or invalid input.")
+                    time.sleep(1)
+            elif key == 'd':
+                # Remove selected job
+                if jobs_list and 0 <= selected_idx < len(jobs_list):
+                    job_id = jobs_list[selected_idx][0]
+                    monitor.remove_job(job_id)
+                    # Adjust selection to avoid going out of bounds
+                    if selected_idx >= len(jobs_list) - 1:
+                        selected_idx = max(0, len(jobs_list) - 2)
+            elif key == 'n':
+                # Browse latest job listings to add
+                new_jobs = browse_job_listings_for_dashboard(monitor)
+                if new_jobs:
+                    for job_id in new_jobs:
+                        monitor.add_job(job_id)
+            elif key in ('\x1b[A', 'k'):  # Up arrow or 'k'
+                selected_idx = max(0, selected_idx - 1)
+                # Handle page change if selection moves off current page
+                if selected_idx < start_idx:
+                    current_page = max(1, current_page - 1)
+            elif key in ('\x1b[B', 'j'):  # Down arrow or 'j'
+                selected_idx = min(total_jobs - 1, selected_idx + 1)
+                # Handle page change if selection moves off current page
+                if selected_idx >= end_idx:
+                    current_page = min(total_pages, current_page + 1)
+            elif key in ('\x1b[D', 'h'):  # Left arrow or 'h'
+                current_page = max(1, current_page - 1)
+                # Adjust selection to be on the new page
+                selected_idx = (current_page - 1) * page_size
+            elif key in ('\x1b[C', 'l'):  # Right arrow or 'l'
+                current_page = min(total_pages, current_page + 1)
+                # Adjust selection to be on the new page
+                selected_idx = (current_page - 1) * page_size
+            elif key in ('\r', '\n', ' '):  # Enter or Space
+                # View the selected job
+                if jobs_list and 0 <= selected_idx < len(jobs_list):
+                    job_id = jobs_list[selected_idx][0]
+                    
+                    # Clear new comments notification for this job
+                    monitor.acknowledge_new_comments(job_id)
+                    
+                    # View the job with comment auto-refresh
+                    display_job_details_with_live_comments(
+                        job_id,
+                        auto_refresh=auto_refresh,
+                        refresh_interval=refresh_interval,
+                        notify_new_comments=notify_new_comments,
+                        page_size=page_size,
+                        width=width
+                    )
+    finally:
+        # Clean up
+        monitor.stop()
+        
+    return 0
+
+def browse_job_listings_for_dashboard(monitor):
+    """
+    Browse recent job listings to add to the dashboard.
+    
+    Args:
+        monitor: The JobMonitor instance
+        
+    Returns:
+        list: IDs of jobs that were selected to add
+    """
+    # Get fresh job stories
+    job_ids = get_job_stories(50)  # Get more to filter for ones with comments
+    
+    # Fetch job details to find ones with comments
+    jobs_with_comments = []
+    
+    loading_indicator = LoadingIndicator("Loading job listings")
+    loading_indicator.start()
+    
+    try:
+        # Fetch jobs in batches for better performance
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            # Submit all fetch operations
+            futures = [executor.submit(fetch_item, job_id) for job_id in job_ids]
+            
+            # Process results as they complete
+            for future in as_completed(futures):
+                job = future.result()
+                if job and job.get('kids'):
+                    jobs_with_comments.append(job)
+    finally:
+        loading_indicator.stop()
+    
+    # Sort by comment count (most commented first)
+    jobs_with_comments.sort(key=lambda j: len(j.get('kids', [])), reverse=True)
+    
+    # Display paginated list with selection interface
+    selected_jobs = []
+    page_size = 10
+    current_page = 1
+    
+    # Dict to track selection state
+    selections = {}  # job_id -> bool
+    
+    # Get currently monitored job IDs
+    monitored_jobs = set(monitor.get_all_jobs().keys())
+    
+    while True:
+        clear_screen()
+        
+        # Calculate pagination
+        total_jobs = len(jobs_with_comments)
+        total_pages = max(1, (total_jobs + page_size - 1) // page_size)
+        
+        # Get slice for current page
+        start_idx = (current_page - 1) * page_size
+        end_idx = min(start_idx + page_size, total_jobs)
+        page_jobs = jobs_with_comments[start_idx:end_idx]
+        
+        # Display header
+        if USE_COLORS:
+            title = colorize("\n===== Select Job Listings to Monitor =====", ColorScheme.TITLE)
+        else:
+            title = "\n===== Select Job Listings to Monitor ====="
+        
+        status = f"Page {current_page}/{total_pages} | " + \
+                 f"{len(jobs_with_comments)} job listings with comments | " + \
+                 f"Selected: {sum(selections.values())}"
+                 
+        if USE_COLORS:
+            status = colorize(status, ColorScheme.INFO)
+        
+        print(title)
+        print(status)
+        print("=" * 80)
+        
+        # Display the jobs on current page
+        for i, job in enumerate(page_jobs):
+            job_id = job.get('id')
+            comment_count = len(job.get('kids', []))
+            
+            # Check selection state
+            is_selected = selections.get(job_id, False)
+            is_monitored = job_id in monitored_jobs
+            
+            # Format checkbox and status
+            if is_monitored:
+                checkbox = "[M]"  # Already being monitored
+                if USE_COLORS:
+                    checkbox = colorize(checkbox, Colors.YELLOW)
+            elif is_selected:
+                checkbox = "[X]"  # Selected
+                if USE_COLORS:
+                    checkbox = colorize(checkbox, Colors.GREEN)
+            else:
+                checkbox = "[ ]"  # Not selected
+            
+            # Format title and other details
+            index = start_idx + i + 1
+            title = job.get('title', 'Untitled Job')
+            
+            if USE_COLORS:
+                title_text = colorize(title, ColorScheme.HEADER)
+                comment_text = colorize(f"{comment_count} comments", ColorScheme.COUNT)
+            else:
+                title_text = title
+                comment_text = f"{comment_count} comments"
+            
+            # Print entry
+            print(f"{index}. {checkbox} {title_text}")
+            print(f"   {comment_text} | {format_timestamp(job.get('time', 0))}")
+            if 'by' in job:
+                poster = job['by']
+                if USE_COLORS:
+                    poster = colorize(poster, ColorScheme.AUTHOR)
+                print(f"   Posted by: {poster}")
+            print()
+        
+        # Display navigation
+        print("=" * 80)
+        print("Navigation:")
+        print("- Enter a number to toggle selection")
+        print("- [a] Select all on current page | [n] Select none on current page")
+        print("- [p] Previous page | [n] Next page")
+        print("- [f] Finish and add selected | [c] Cancel")
+        
+        # Get user input
+        key = getch().lower()
+        
+        # Handle navigation
+        if key == 'c':
+            return []  # Cancel, return empty list
+        
+        elif key == 'f':
+            # Finish and return selected jobs
+            return [job_id for job_id, selected in selections.items() if selected]
+        
+        elif key == 'a':
+            # Select all on current page
+            for job in page_jobs:
+                job_id = job.get('id')
+                if job_id not in monitored_jobs:
+                    selections[job_id] = True
+        
+        elif key == 'n':
+            # Deselect all on current page
+            for job in page_jobs:
+                job_id = job.get('id')
+                selections[job_id] = False
+        
+        elif key == 'p':
+            # Previous page
+            current_page = max(1, current_page - 1)
+        
+        elif key == 'n':
+            # Next page
+            current_page = min(total_pages, current_page + 1)
+        
+        elif key.isdigit():
+            # Toggle selection of numbered item
+            try:
+                num = int(key)
+                if 1 <= num <= len(page_jobs):
+                    job = page_jobs[num-1]
+                    job_id = job.get('id')
+                    
+                    # Can't select already monitored jobs
+                    if job_id not in monitored_jobs:
+                        selections[job_id] = not selections.get(job_id, False)
+            except ValueError:
+                pass  # Invalid number, ignore
+
+def clean_html(html_text):
+    """Clean HTML text for display."""
+    if not html_text: 
+        return "[No description]"
+    
+    # Decode HTML entities
+    text = html.unescape(html_text)
+    
+    # Replace common HTML tags with plain text equivalents
+    text = text.replace('<p>', '\n\n').replace('</p>', '')
+    text = text.replace('<b>', '*').replace('</b>', '*')
+    text = text.replace('<br/>', '\n').replace('<br />', '\n')
+    text = text.replace('<li>', '\n• ').replace('</li>', '')
+    text = text.replace('<ul>', '\n').replace('</ul>', '')
+    text = text.replace('<ol>', '\n').replace('</ol>', '')
+    text = text.replace('<i>', '_').replace('</i>', '_')
+    text = text.replace('<strong>', '*').replace('</strong>', '*')
+    text = text.replace('<em>', '_').replace('</em>', '_')
+    
+    # Remove other HTML tags
+    while '<' in text and '>' in text:
+        start = text.find('<')
+        end = text.find('>', start)
+        if start != -1 and end != -1:
+            text = text[:start] + text[end+1:]
+        else:
+            break
+    
+    return text.strip()
+
+def format_timestamp(unix_time):
+    """Format a Unix timestamp into a human-readable string."""
+    if not unix_time:
+        return "Unknown time"
+    
+    try:
+        dt = datetime.datetime.fromtimestamp(unix_time)
+        # Format: "Mar 17, 2023 at 10:30 AM"
+        timestamp = dt.strftime("%b %d, %Y at %I:%M %p")
+        if USE_COLORS:
+            timestamp = colorize(timestamp, ColorScheme.TIME)
+        return timestamp
+    except (TypeError, ValueError):
+        return colorize("Unknown time", ColorScheme.TIME) if USE_COLORS else "Unknown time"

@@ -1,5 +1,5 @@
 {
-	"uuid": "651f6232-f5c2-4519-8ae9-d6933f2c5af1",
+	"uuid": "e88b42ac-7192-4097-aabd-9ac39b84a776",
 	"model": "83aa91117c2fac3e25a3757eaa59f29ed3aeaf4dd7d3d384c673086c321e0644",
 	"root_gdrive": "https://drive.google.com/drive/folders/1bCWBjvFr2sxvKi4CkrhZw1nnpHiVouYV?usp=sharing",
 	"workflow": "existing_codebase",
@@ -12,40 +12,40 @@
 			"prompt": "Implement a background fetching feature for comments given the time interval.",
 			"hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
 			"choice": 1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1ZRuI8BhWdK2ynqhT-qFr3jBWhL6Q_69g/view?usp=drive_link",
 			"usecase": "initial_development",
 			"issue_type": "incorrect_bash_usage",
-      "issue_comment": "The `sed` bash commands are not working for each model.",
+      "issue_comment": "The `sed` bash commands are not working for each model. The issues can be found on pages 9, 35",
       "issue_source": "",
-      "comment": ""
+      "comment": "The `sed` used by both models are editing the files as intended. The preference of model A is subjected to conciseness."
 		},
     {
 			"prompt": "Please return the code you used to continuesly fetch comments given the time interval in a code block.",
 			"hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
 			"choice": 1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1LUKSS30PS-NJkDfCUwFMXNL_xszeo6zi/view?usp=drive_link",
 			"usecase": "debugging_fixes",
 			"issue_type": "technical_inconsistency",
-      "issue_comment": "Both models returned a code without the file to put the code.", 
-      "issue_source": "",
-      "comment": ""
+      "issue_comment": "Both models wrote the class `BackgroundCommentFetcher` without the file to put the code. The issue can be found on pages 1 and 6.", 
+      "issue_source": "`BackgroundCommentFetcher` class",
+      "comment": "Both models created the class `BackgroundCommentFetcher` without specifying the file to put the code in. The preference of model A is subjected to conciseness."
 		},
     {
 			"prompt": "Please return the code along with the file to put the code in.",
 			"hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
 			"choice": -1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1Pvf2PhuBtcFzVH-WggdoBQXb6ufv72Lf/view?usp=drive_link",
 			"usecase": "debugging_fixes",
 			"issue_type": "technical_inconsistency",
-      "issue_comment": "There is no way of knowing that the comments are being refetched. A progress indicator is needed.", 
-      "issue_source": "",
-      "comment": ""
+      "issue_comment": "There is no way of knowing that the comments are being refetched. A progress indicator is needed. The issue can found on page 5 and 13.", 
+      "issue_source": "pynews/comments.py",
+      "comment": "Both models addressed the prompt. However, both models didn't add a progress indicator to show that the comments are being refetched. The preference of model A is subjected to conciseness."
 		},
     {
       "prompt": "There is no way of knowing that the comments are being refetched. A progress indicator is needed.",
       "hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
       "choice": 1,
-      "gdrive": "",
+      "gdrive": "https://drive.google.com/file/d/1STswKnnrOY7wPiG4N5gwm7U858VIiyEC/view?usp=drive_link",
       "usecase": "debugging_fixes",
       "issue_type": "",
       "issue_comment": "", 
@@ -55,13 +55,35 @@
     {
       "prompt": "Now add a feature to refetch comments for ASK stories in the background.",
       "hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
-      "choice": 1,
-      "gdrive": "",
+      "choice": -1,
+      "gdrive": "https://drive.google.com/file/d/1hNnDc_yCEUNXKe5t27J4tRzYCjTEHdac/view?usp=drive_link",
       "usecase": "debugging_fixes",
       "issue_type": "",
       "issue_comment": "", 
       "issue_source": "",
-      "comment": "Now the issue is fixed by both models. The progress indicator is shown in the terminal when the comments are being refetched."
+      "comment": "Both models satisfied the prompt."
+    },
+    {
+      "prompt": "Now add a feature to refetch comments for job stories in the background.",
+      "hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
+      "choice": -1,
+      "gdrive": "https://drive.google.com/file/d/1SbXGlQHfIuMv3HruHKyQaN6JHBLFpaBf/view?usp=drive_link",
+      "usecase": "debugging_fixes",
+      "issue_type": "",
+      "issue_comment": "", 
+      "issue_source": "",
+      "comment": "Both models satisfied the prompt."
+    },
+    {
+      "prompt": "Now add a feature to refetch comments for poll stories in the background.",
+      "hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
+      "choice": 1,
+      "gdrive": "https://drive.google.com/file/d/1np20AdNWWjCro0tCvXuDnVBLqokOIVV2/view?usp=drive_link",
+      "usecase": "debugging_fixes",
+      "issue_type": "",
+      "issue_comment": "", 
+      "issue_source": "",
+      "comment": "Both models satisfied the prompt."
     }
   ]
 }
