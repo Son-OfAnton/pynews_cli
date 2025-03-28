@@ -12,78 +12,78 @@
 			"prompt": "Implement a feature to save comments of a single story in JSON or CSV format locally.",
 			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
 			"choice": -2,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/15aOIB8ps0gWX9MyVfR0MfktQENZmMAc8/view?usp=drive_link",
 			"usecase": "initial_development",
-			"issue_type": "bash",
-      "issue_comment": "Model B throws error while using the `grep` command",
+			"issue_type": "incorrect_bash_usage",
+      "issue_comment": "Model B throws error while using the `grep` command. The issue can be found on page 57.",
       "issue_source": "",
-      "comment": ""
+      "comment": "Since model B exhibited an incorrect usage of the `grep` command, model A is better than model B."
 		},
     {
 			"prompt": "I am not seeing the file I exported in the specified directory. Please return all relevant files in a code block.",
 			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
 			"choice": -1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1qz6iXJzATDrY825Ix8PyUikUAVMhIpfY/view?usp=drive_link",
 			"usecase": "debugging_fixes",
 			"issue_type": "",
       "issue_comment": "",
       "issue_source": "",
-      "comment": ""
+      "comment": "Both models fixed the issue of not being able to find the exported file. The preference towards model A is due to code conciseness."
 		},
     {
 			"prompt": "Now the export works, but I am getting this error in the log `Error exporting to JSON: type object 'ColorScheme' has no attribute 'SUCCESS'`. Please fix it.",
 			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
 			"choice": -1,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1lDILE9BBbp73YYhQJFsWV_OdO45xzMEL/view?usp=drive_link",
 			"usecase": "debugging_fixes",
-			"issue_type": "",
-      "issue_comment": "Both models removed the error log. However, the exporting functionality is broked now. Model B forgot to add the variable `base_filename` to name the file too.",
-      "issue_source": "",
-      "comment": ""
+			"issue_type": "missing_memory",
+      "issue_comment": "Both models removed the error log. However, the exporting functionality is broked now. Model B forgot to add the variable `base_filename` to name the file too. The issue can be found on page 11.",
+      "issue_source": "pynews/comments.py",
+      "comment": "Both models achieved what the prompt asked for. The preference towards model A is due to a missing memory defect seen on model B by forgetting to declare an existing variable `base_filename`."
 		},
     {
 			"prompt": "Even though the error log is removed now. The exporting functionality has stopped working now.",
 			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
 			"choice": 3,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1z9mD5D2Y5vL38HQTQ7Rdc3cV2zahRUE9/view?usp=drive_link",
 			"usecase": "debugging_fixes",
-			"issue_type": "",
-      "issue_comment": "Model A broke the existing comments fetching feature. Model B fixed the export issue. But the `-c` flag is not working while being useda alone.",
-      "issue_source": "",
-      "comment": ""
+			"issue_type": "code_correctness",
+      "issue_comment": "Model A broke the existing comments fetching feature. Model B fixed the export issue. But the `-c` flag is not working while being used alone. The issue can be found on page 13.`",
+      "issue_source": "pynews/comments.py",
+      "comment": "The preference towards model B is due to the fact that it fixed the export issue. Model A broke the existing comments fetching feature."
 		},
     {
 			"prompt": "The exporting functionality is working now. But the `-c` flag is not working while being used alone. Please fix it.",
 			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
 			"choice": 3,
-			"gdrive": "",
+			"gdrive": "https://drive.google.com/file/d/1coe3cxkIweruh4tvk6bngO1t2n3HGsBn/view?usp=drive_link",
 			"usecase": "debugging_fixes",
-			"issue_type": "",
-      "issue_comment": "Model B exports the comments and lists the comments when the `-c` flag is used alone. Model A failed to export the comments. However, model throws the error `Error: object of type 'NoneType' has no len()`.",
-      "issue_source": "",
-      "comment": ""
+			"issue_type": "code_correctness",
+      "issue_comment": "Model B exports the comments and lists the comments when the `-c` flag is used alone. Model A failed to export the comments. However, model throws the error `Error: object of type 'NoneType' has no len()`. The issue can be found on page 10.",
+      "issue_source": "pynews/comments.py",
+      "comment": "The preference towards model B is due to the fact that it fixed the export issue. Model A broke the existing comments fetching feature."
 		},
     {
 			"prompt": "Even though the comments are being exported now and the `-c` flag is working when used alone. The error message `Error: object of type 'NoneType' has no len()` is still being shown comments are exported. Please fix it.",
 			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
-			"choice": 3,
-			"gdrive": "",
+			"choice": -1,
+			"gdrive": "https://drive.google.com/file/d/19we0BK0LGf_m1TS_AgtfdPvwGiwXe4T4/view?usp=drive_link",
 			"usecase": "debugging_fixes",
 			"issue_type": "",
-      "issue_comment": "Model B exports the comments and lists the comments when the `-c` flag is used alone. Model A failed to export the comments. However, model throws the error `Error: object of type 'NoneType' has no len()`.",
+			"issue_comment": "",
       "issue_source": "",
-      "comment": ""
+      "comment": "Both models achieved what the prompt asked for. The preference towards model A is due to code conciseness."
 		},
     {
       "prompt": "Generate tests for exporting functionality.",
 			"hfi_id": "4ed80168-b776-42e5-8b7a-57588ed8b83b",
 			"choice": -1,
-			"gdrive": "",
-			"usecase": "debugging_fixes",
+			"gdrive": "https://drive.google.com/file/d/1UwfdMZB3Hk2BuiG77PDxHN6u3RQPCC_c/view?usp=drive_link",
+			"usecase": "feature_implementation",
 			"issue_type": "",
       "issue_comment": "",
       "issue_source": "",
-      "comment": ""
+      "comment": "Both models generated comprehensive tests for the exporting functionality. The preference towards model A is due to code conciseness."
 		}
   ]
 }
