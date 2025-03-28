@@ -1,0 +1,67 @@
+{
+	"uuid": "651f6232-f5c2-4519-8ae9-d6933f2c5af1",
+	"model": "83aa91117c2fac3e25a3757eaa59f29ed3aeaf4dd7d3d384c673086c321e0644",
+	"root_gdrive": "https://drive.google.com/drive/folders/1bCWBjvFr2sxvKi4CkrhZw1nnpHiVouYV?usp=sharing",
+	"workflow": "existing_codebase",
+	"codebase": {
+		"url": "https://github.com/mazulo/pynews_cli",
+		"description": "A CLI tool to read Hacker News stories."
+	},
+	"prompts": [
+    {
+			"prompt": "Implement a background fetching feature for comments given the time interval.",
+			"hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
+			"choice": 1,
+			"gdrive": "",
+			"usecase": "initial_development",
+			"issue_type": "incorrect_bash_usage",
+      "issue_comment": "The `sed` bash commands are not working for each model.",
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+			"prompt": "Please return the code you used to continuesly fetch comments given the time interval in a code block.",
+			"hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
+			"choice": 1,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "technical_inconsistency",
+      "issue_comment": "Both models returned a code without the file to put the code.", 
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+			"prompt": "Please return the code along with the file to put the code in.",
+			"hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
+			"choice": -1,
+			"gdrive": "",
+			"usecase": "debugging_fixes",
+			"issue_type": "technical_inconsistency",
+      "issue_comment": "There is no way of knowing that the comments are being refetched. A progress indicator is needed.", 
+      "issue_source": "",
+      "comment": ""
+		},
+    {
+      "prompt": "There is no way of knowing that the comments are being refetched. A progress indicator is needed.",
+      "hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
+      "choice": 1,
+      "gdrive": "",
+      "usecase": "debugging_fixes",
+      "issue_type": "",
+      "issue_comment": "", 
+      "issue_source": "",
+      "comment": "Now the issue is fixed by both models. The progress indicator is shown in the terminal when the comments are being refetched."
+    },
+    {
+      "prompt": "Now add a feature to refetch comments for ASK stories in the background.",
+      "hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
+      "choice": 1,
+      "gdrive": "",
+      "usecase": "debugging_fixes",
+      "issue_type": "",
+      "issue_comment": "", 
+      "issue_source": "",
+      "comment": "Now the issue is fixed by both models. The progress indicator is shown in the terminal when the comments are being refetched."
+    }
+  ]
+}

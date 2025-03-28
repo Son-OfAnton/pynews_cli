@@ -169,7 +169,7 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N new stories from HackerNews API",
     )
-    
+
     parser.add_argument(
         "-a",
         "--ask-stories",
@@ -178,7 +178,7 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N latest Ask HN stories from HackerNews API",
     )
-    
+
     parser.add_argument(
         "-j",
         "--job-stories",
@@ -187,7 +187,7 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N latest job listings from HackerNews API",
     )
-    
+
     parser.add_argument(
         "--poll-stories",
         nargs="?",
@@ -195,20 +195,20 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N latest poll questions from HackerNews API",
     )
-    
+
     parser.add_argument(
         "--poll-keyword",
         nargs="+",
         metavar="KEYWORD",
         help="Filter poll questions by keyword(s)",
     )
-    
+
     parser.add_argument(
         "--poll-details",
         type=int,
         help="View details of a poll with the given ID",
     )
-    
+
     parser.add_argument(
         "--poll-top",
         nargs="?",
@@ -216,7 +216,7 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N highest-scoring poll questions",
     )
-    
+
     parser.add_argument(
         "--poll-discussed",
         nargs="?",
@@ -224,7 +224,7 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N most commented poll questions",
     )
-    
+
     parser.add_argument(
         "--poll-recent",
         nargs="?",
@@ -232,44 +232,44 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N most recent poll questions",
     )
-    
+
     parser.add_argument(
         "--user",
         metavar="USERNAME",
         help="View information about a specific HackerNews user",
     )
-    
+
     parser.add_argument(
         "--list-users",
         action="store_true",
         help="List random HackerNews users and view their profiles",
     )
-    
+
     parser.add_argument(
         "--user-search",
         action="store_true",
         help="Search for a specific HackerNews user",
     )
-    
+
     parser.add_argument(
         "--job-keyword",
         nargs="+",
         metavar="KEYWORD",
         help="Filter job listings by keyword(s)",
     )
-    
+
     parser.add_argument(
         "--job-sort-by-score",
         action="store_true",
         help="Sort job listings by score instead of date",
     )
-    
+
     parser.add_argument(
         "--job-oldest-first",
         action="store_true",
         help="Show oldest job listings first (default is newest first)",
     )
-    
+
     parser.add_argument(
         "--ask-top",
         nargs="?",
@@ -277,7 +277,7 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N highest-scoring Ask HN stories",
     )
-    
+
     parser.add_argument(
         "--ask-discussed",
         nargs="?",
@@ -285,7 +285,7 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N most commented Ask HN stories",
     )
-    
+
     parser.add_argument(
         "--ask-recent",
         nargs="?",
@@ -293,27 +293,27 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Get the N most recent Ask HN stories",
     )
-    
+
     parser.add_argument(
         "--ask-search",
         nargs="+",
         metavar="KEYWORD",
         help="Search for Ask HN stories containing specific keywords",
     )
-    
+
     parser.add_argument(
         "--keyword",
         nargs="+",
         metavar="KEYWORD",
         help="Filter stories by keyword(s)",
     )
-    
+
     parser.add_argument(
         "--match-all",
         action="store_true",
         help="When using multiple keywords, require ALL keywords to match (default is ANY)",
     )
-    
+
     parser.add_argument(
         "--case-sensitive",
         action="store_true",
@@ -326,27 +326,27 @@ def get_parser_options() -> argparse.Namespace:
         default=0,
         help="Minimum score threshold for stories",
     )
-    
+
     parser.add_argument(
         "--min-comments",
         type=int,
         default=0,
         help="Minimum comment threshold for Ask HN stories (used with --ask-discussed)",
     )
-    
+
     parser.add_argument(
         "--max-age",
         type=int,
         default=0,
         help="Maximum age in hours for Ask HN stories (used with --ask-recent)",
     )
-    
+
     parser.add_argument(
         "--sort-by-comments",
         action="store_true",
         help="Sort Ask HN stories by comment count instead of score",
     )
-    
+
     parser.add_argument(
         "--sort-by-time",
         action="store_true",
@@ -370,35 +370,35 @@ def get_parser_options() -> argparse.Namespace:
         type=int,
         help="Determine the number max of threads",
     )
-    
+
     parser.add_argument(
         "-c",
         "--comments",
         type=int,
         help="View comments for a story with the given ID",
     )
-    
+
     parser.add_argument(
         "-d",
         "--ask-details",
         type=int,
         help="View details of an Ask HN story with the given ID, highlighting the author and score",
     )
-    
+
     parser.add_argument(
         "--page-size",
         type=int,
         default=10,
         help="Number of items to display per page",
     )
-    
+
     parser.add_argument(
         "--page",
         type=int,
         default=1,
         help="Which page of comments to display",
     )
-    
+
     parser.add_argument(
         "-w",
         "--width",
@@ -413,58 +413,72 @@ def get_parser_options() -> argparse.Namespace:
         action="store_true",
         help="Export comments to a JSON file",
     )
-    
+
     parser.add_argument(
         "--export-csv",
         action="store_true",
         help="Export comments to a CSV file",
     )
-    
+
     parser.add_argument(
         "--export-path",
         type=str,
         help="Path to save exported comments (default: current directory)",
     )
-    
+
     parser.add_argument(
         "--export-filename",
         type=str,
         help="Filename for exported comments (without extension, default: hn_story_ID_comments_TIMESTAMP)",
     )
-    
+
     parser.add_argument(
         "--no-timestamp",
         action="store_true",
         help="Omit timestamp from export filename",
     )
 
+    parser.add_argument(
+        "--auto-refresh",
+        nargs="?",
+        const=5,
+        type=int,
+        help="Automatically refresh comments at the specified interval in seconds (default: 60)",
+    )
+
+    parser.add_argument(
+        "--notify-new",
+        action="store_true",
+        help="Show a notification when new comments are found during auto-refresh",
+    )
+
     options = parser.parse_args()
-    
+
     # If --ask-discussed is used, set sort_by_comments to True
     if options.ask_discussed:
         options.sort_by_comments = True
         options.ask_top = options.ask_discussed
-    
+
     # If --ask-recent is used, set sort_by_time to True
     if options.ask_recent:
         options.sort_by_time = True
         options.ask_top = options.ask_recent
-    
+
     # If --ask-search is used, set up keyword search
     if options.ask_search:
         options.keyword = options.ask_search
         options.ask_stories = 200  # Default to a larger set for searching
-    
+
     # Handle poll-specific options
     if options.poll_discussed:
         options.sort_by_comments = True
         options.poll_stories = options.poll_discussed
-    
+
     if options.poll_recent:
         options.sort_by_time = True
         options.poll_stories = options.poll_recent
-    
+
     if options.poll_top:
         options.poll_stories = options.poll_top
-        
+
     return options
