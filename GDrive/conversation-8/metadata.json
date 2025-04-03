@@ -15,9 +15,9 @@
 			"gdrive": "https://drive.google.com/file/d/1ZRuI8BhWdK2ynqhT-qFr3jBWhL6Q_69g/view?usp=drive_link",
 			"usecase": "initial_development",
 			"issue_type": "incorrect_bash_usage",
-      "issue_comment": "The `sed` bash commands are not working for each model. The issues can be found on pages 9, 35",
+      "issue_comment": "The `sed` bash commands are not appropriately editing the file and replacing contents. The issues can be found on pages 9, 35",
       "issue_source": "",
-      "comment": "The `sed` used by both models are editing the files as intended. The preference of model A is subjected to conciseness."
+      "comment": "The `sed` bash commands are not appropriately editing the file and replacing contents. However this is a minor issue. The preference of model B is subjected to conciseness."
 		},
     {
 			"prompt": "Please return the code you used to continuesly fetch comments given the time interval in a code block.",
@@ -28,15 +28,15 @@
 			"issue_type": "technical_inconsistency",
       "issue_comment": "Both models wrote the class `BackgroundCommentFetcher` without the file to put the code. The issue can be found on pages 1 and 6.", 
       "issue_source": "`BackgroundCommentFetcher` class",
-      "comment": "Both models created the class `BackgroundCommentFetcher` without specifying the file to put the code in. The preference of model A is subjected to conciseness."
+      "comment": "Both models created the class `BackgroundCommentFetcher` without specifying the file to put the code in. The preference of model B is subjected to conciseness."
 		},
-    {
+    { 
 			"prompt": "Please return the code along with the file to put the code in.",
 			"hfi_id": "44aaa2d9-a959-4549-896e-0d8721a4daa5",
 			"choice": -1,
 			"gdrive": "https://drive.google.com/file/d/1Pvf2PhuBtcFzVH-WggdoBQXb6ufv72Lf/view?usp=drive_link",
 			"usecase": "debugging_fixes",
-			"issue_type": "technical_inconsistency",
+			"issue_type": "code_correctness",
       "issue_comment": "There is no way of knowing that the comments are being refetched. A progress indicator is needed. The issue can found on page 5 and 13.", 
       "issue_source": "pynews/comments.py",
       "comment": "Both models addressed the prompt. However, both models didn't add a progress indicator to show that the comments are being refetched. The preference of model A is subjected to conciseness."
@@ -50,7 +50,7 @@
       "issue_type": "",
       "issue_comment": "", 
       "issue_source": "",
-      "comment": "Now the issue is fixed by both models. The progress indicator is shown in the terminal when the comments are being refetched."
+      "comment": "Now the issue is fixed by both models. The progress indicator is shown in the terminal when the comments are being refetched. The preference of model B is subjected to conciseness."
     },
     {
       "prompt": "Now add a feature to refetch comments for ASK stories in the background.",
@@ -61,7 +61,7 @@
       "issue_type": "",
       "issue_comment": "", 
       "issue_source": "",
-      "comment": "Both models satisfied the prompt."
+      "comment": "Both models satisfied the prompt. The preference of model A is subjected to conciseness." 
     },
     {
       "prompt": "Now add a feature to refetch comments for job stories in the background.",
@@ -72,7 +72,7 @@
       "issue_type": "",
       "issue_comment": "", 
       "issue_source": "",
-      "comment": "Both models satisfied the prompt."
+      "comment": "Both models satisfied the prompt. The preference of model A is subjected to conciseness."
     },
     {
       "prompt": "Now add a feature to refetch comments for poll stories in the background.",
@@ -83,7 +83,7 @@
       "issue_type": "",
       "issue_comment": "", 
       "issue_source": "",
-      "comment": "Both models satisfied the prompt."
+      "comment": "Both models satisfied the prompt. The preference of model B is subjected to conciseness."
     }
   ]
 }
